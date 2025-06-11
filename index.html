@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MVL Group - CMMC Level 1 Interactive Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --bg-secondary-color: #ffffff;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --border-color: #e2e8f0;
+            --primary-color: #4f46e5;
+            --primary-color-hover: #4338ca;
+            --logo-color: #1e293b;
+            --switch-bg: #e2e8f0;
+            --step-bg: #f1f5f9;
+            --step-node-bg: #ffffff;
+            --status-not-started-bg: #e2e8f0;
+            --status-not-started-text: #475569;
+            --status-in-progress-bg: #e0f2fe;
+            --status-in-progress-text: #0ea5e9;
+            --status-compliant-bg: #dcfce7;
+            --status-compliant-text: #22c55e;
+            --status-needs-review-bg: #fffbeb;
+            --status-needs-review-text: #f59e0b;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #020617;
+            --bg-secondary-color: #0f172a;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --border-color: #334155;
+            --primary-color: #818cf8;
+            --primary-color-hover: #6366f1;
+            --logo-color: #e2e8f0;
+            --switch-bg: #334155;
+            --step-bg: #1e293b;
+            --step-node-bg: #0f172a;
+            --status-not-started-bg: #334155;
+            --status-not-started-text: #94a3b8;
+            --status-in-progress-bg: #0c4a6e;
+            --status-in-progress-text: #7dd3fc;
+            --status-compliant-bg: #14532d;
+            --status-compliant-text: #bbf7d0;
+            --status-needs-review-bg: #78350f;
+            --status-needs-review-text: #fde68a;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .container { display: flex; max-width: 1800px; margin: 0 auto; }
+
+        /* --- Header --- */
+        .header {
+            width: 100%; padding: 16px 40px; background-color: var(--bg-secondary-color);
+            border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between;
+            align-items: center; position: fixed; top: 0; left: 0; z-index: 1000;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .logo { font-size: 1.5rem; font-weight: 700; color: var(--logo-color); display: flex; align-items: center; }
+        .logo-svg { width: 100px; height: 36px; margin-right: 12px; }
+        .theme-switch-wrapper { display: flex; align-items: center; }
+        .theme-switch { position: relative; display: inline-block; width: 50px; height: 28px; }
+        .theme-switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--switch-bg); transition: .4s; border-radius: 28px; }
+        .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--primary-color); }
+        input:checked + .slider:before { transform: translateX(22px); }
+
+        /* --- Sidebar Navigation --- */
+        .sidebar {
+            width: 320px; background-color: var(--bg-secondary-color); border-right: 1px solid var(--border-color);
+            position: fixed; top: 73px; bottom: 0; padding: 20px 0; overflow-y: auto;
+        }
+        .sidebar-nav-list, .sub-nav-list { list-style: none; }
+        .nav-group-header {
+            padding: 12px 30px; font-size: 0.9rem; font-weight: 600; color: var(--text-primary);
+            cursor: pointer; display: flex; justify-content: space-between; align-items: center; text-transform: uppercase; letter-spacing: 0.05em;
+        }
+        .nav-group-header .arrow { transition: transform 0.2s; }
+        .nav-group.open .arrow { transform: rotate(90deg); }
+        .sub-nav-list { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; background-color: var(--bg-color); }
+        .nav-group.open .sub-nav-list { max-height: 500px; }
+        .sub-nav-list a {
+            display: block; padding: 10px 30px 10px 45px; color: var(--text-secondary); text-decoration: none;
+            font-size: 0.9rem; font-weight: 500; border-left: 4px solid transparent;
+            transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+        }
+        .sub-nav-list a:hover { background-color: var(--step-bg); color: var(--primary-color); }
+        .sub-nav-list a.active {
+            color: var(--primary-color); font-weight: 600; border-left-color: var(--primary-color);
+        }
+
+        /* --- Main Content --- */
+        .main-content {
+            flex-grow: 1; margin-left: 320px;
+            padding: 93px 40px 40px 40px;
+        }
+        
+        /* --- Compliance Overview Dashboard --- */
+        .compliance-overview {
+            background-color: var(--bg-secondary-color);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 40px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .compliance-overview h2 {
+            font-size: 1.5rem;
+            margin-bottom: 25px;
+            color: var(--text-primary);
+        }
+        .dashboard-content {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .progress-bar-container {
+            width: 100%;
+            height: 30px;
+            background-color: var(--border-color);
+            border-radius: 15px;
+            overflow: hidden;
+            display: flex;
+        }
+        .progress-segment {
+            height: 100%;
+            transition: width 0.5s ease-in-out;
+            cursor: pointer;
+            filter: brightness(1);
+        }
+        .progress-segment:hover {
+            filter: brightness(1.1);
+        }
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            font-size: 0.9rem;
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 6px;
+            transition: background-color 0.2s;
+        }
+        .legend-item:hover {
+            background-color: var(--step-bg);
+        }
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+            margin-right: 10px;
+        }
+        .legend-text { color: var(--text-secondary); }
+        .legend-value { font-weight: 600; color: var(--text-primary); margin-left: 8px; }
+
+        .control-section {
+            margin-bottom: 40px; background-color: var(--bg-secondary-color); border: 1px solid var(--border-color);
+            border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .control-header { padding: 25px 30px; border-bottom: 1px solid var(--border-color); background: var(--bg-color); }
+        .control-header h2 { font-size: 1.4rem; color: var(--primary-color); }
+        .control-header p { color: var(--text-secondary); margin-top: 5px; font-size: 0.95rem;}
+        .control-body { display: flex; padding: 30px; gap: 30px; }
+        .control-info { flex: 3; min-width: 0; }
+        .control-visual { flex: 2; display: flex; flex-direction: column; align-items: stretch; min-width: 0;}
+        
+        /* New Process Steps Style */
+        .process-steps-container {
+            width: 100%;
+            background-color: var(--step-bg);
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            height: 100%;
+        }
+        .process-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 25px;
+            font-size: 1.1rem;
+            text-align: center;
+        }
+        .step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .step-node {
+            display: flex;
+            align-items: center;
+            background-color: var(--step-node-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px 15px;
+            width: 100%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .step-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #fff;
+            flex-shrink: 0;
+            margin-right: 15px;
+        }
+        .step-icon svg { width: 16px; height: 16px; }
+        .step-icon.assess { background-color: #22c55e; }
+        .step-icon.implement { background-color: #3b82f6; }
+        .step-icon.monitor { background-color: #14b8a6; }
+        .step-icon.respond { background-color: #f97316; }
+        .step-icon.improve { background-color: #ef4444; }
+
+        .step-text {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            line-height: 1.4;
+        }
+        .step-arrow {
+            color: var(--border-color);
+            font-size: 1.5rem;
+            margin: 8px 0;
+        }
+        .step:not(:last-child) .step-arrow {
+             display: block;
+        }
+
+        .tabs { display: flex; border-bottom: 1px solid var(--border-color); margin-bottom: 25px; flex-wrap: wrap; }
+        .tab-button {
+            padding: 10px 20px; cursor: pointer; border: none; background-color: transparent; color: var(--text-secondary);
+            font-weight: 500; border-bottom: 3px solid transparent; margin-bottom: -1px; transition: color 0.2s, border-color 0.2s;
+        }
+        .tab-button.active { color: var(--primary-color); border-bottom-color: var(--primary-color); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: contentFadeIn 0.5s; }
+        @keyframes contentFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .tab-content h4 { font-size: 1rem; margin-top: 1.5em; margin-bottom: 0.5em; color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: 8px;}
+        .tab-content ul { list-style: none; padding-left: 0; color: var(--text-secondary); }
+        .tab-content li { padding-left: 20px; position: relative; margin-bottom: 8px; }
+        .tab-content li::before { content: '✓'; color: var(--primary-color); position: absolute; left: 0; font-weight: bold; }
+        .tab-content strong { color: var(--text-primary); font-weight: 600;}
+
+        /* Status Tab Styles */
+        .status-selector { display: flex; gap: 10px; flex-wrap: wrap; }
+        .status-option { padding: 8px 16px; border-radius: 20px; border: 2px solid transparent; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+        .status-option[data-status="Not Started"] { background-color: var(--status-not-started-bg); color: var(--status-not-started-text); }
+        .status-option[data-status="In Progress"] { background-color: var(--status-in-progress-bg); color: var(--status-in-progress-text); }
+        .status-option[data-status="Compliant"] { background-color: var(--status-compliant-bg); color: var(--status-compliant-text); }
+        .status-option[data-status="Needs Review"] { background-color: var(--status-needs-review-bg); color: var(--status-needs-review-text); }
+        .status-option.selected { border-color: var(--primary-color); box-shadow: 0 0 0 3px var(--flowchart-decision-bg); }
+
+        .official-guidance-btn {
+            display: inline-block; margin-top: 20px; padding: 10px 20px; background-color: var(--primary-color);
+            color: #fff; text-decoration: none; border-radius: 8px; font-weight: 500; transition: background-color 0.2s;
+        }
+        .official-guidance-btn:hover { background-color: var(--primary-color-hover); }
+
+        /* --- Modal --- */
+        .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0, 0, 0, 0.6); animation: fadeIn 0.3s ease; }
+        .modal-content { background-color: var(--bg-secondary-color); margin: 5% auto; padding: 40px; border: 1px solid var(--border-color); width: 90%; max-width: 800px; border-radius: 12px; position: relative; animation: slideIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideIn { from { transform: translateY(-30px); opacity: 0; } to { transform: translateY(0); opacity: 1; }}
+        .close-btn { color: var(--text-secondary); position: absolute; top: 15px; right: 25px; font-size: 2rem; font-weight: bold; cursor: pointer; transition: color 0.2s; }
+        .close-btn:hover { color: var(--text-primary); }
+        #modal-body-content h3 { color: var(--primary-color); margin-bottom: 15px; }
+        #modal-body-content p { color: var(--text-secondary); line-height: 1.7; }
+        #modal-body-content a { color: var(--primary-color); }
+
+        /* Responsive */
+        @media (max-width: 1200px) { .control-body { flex-direction: column; } .dashboard-content { flex-direction: column; align-items: stretch;} }
+        @media (max-width: 992px) {
+            .sidebar { transform: translateX(-100%); width: 280px; transition: transform 0.3s ease; z-index: 1100; top: 0; height: 100vh; }
+            .sidebar.open { transform: translateX(0); box-shadow: 10px 0 20px rgba(0,0,0,0.1); }
+            .main-content { margin-left: 0; }
+            .menu-toggle { display: block; cursor: pointer; z-index: 1200; }
+            .header { padding-left: 20px; padding-right: 20px; }
+        }
+        .menu-toggle { display: none; font-size: 1.5rem; margin-right: 15px; background: none; border: none; color: var(--text-primary); }
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <div style="display: flex; align-items: center;">
+            <button class="menu-toggle" id="menu-toggle-btn">&#9776;</button>
+            <div class="logo">
+                <svg class="logo-svg" viewBox="0 0 220 60" xmlns="http://www.w3.org/2000/svg">
+                    <g id="bars">
+                        <rect y="0" width="60" height="10" fill="#BDBDBD"/>
+                        <rect y="12.5" width="60" height="10" fill="#8B0000"/>
+                        <rect y="25" width="60" height="10" fill="#4B0082"/>
+                        <rect y="37.5" width="60" height="10" fill="#9ACD32"/>
+                        <rect y="50" width="60" height="10" fill="#FF8C00"/>
+                    </g>
+                    <text x="75" y="45" font-family="Inter, sans-serif" font-size="40" font-weight="700" fill="var(--logo-color)" letter-spacing="-1">MVL</text>
+                </svg>
+            </div>
+        </div>
+        <div class="theme-switch-wrapper">
+            <label class="theme-switch" for="theme-toggle">
+                <input type="checkbox" id="theme-toggle">
+                <span class="slider"></span>
+            </label>
+        </div>
+    </header>
+
+    <div class="container">
+        <nav class="sidebar" id="sidebar-nav">
+            <ul class="sidebar-nav-list" id="sidebar-nav-list">
+                <!-- Nav groups will be inserted here -->
+            </ul>
+        </nav>
+
+        <main class="main-content" id="main-content">
+            <section class="compliance-overview">
+                <h2>Compliance Overview</h2>
+                <div class="dashboard-content">
+                    <div class="progress-bar-container" id="progress-bar-container">
+                        <!-- Progress segments will be inserted here -->
+                    </div>
+                    <div class="legend" id="chart-legend">
+                        <!-- Legend items will be inserted here -->
+                    </div>
+                </div>
+            </section>
+            <!-- Control sections will be inserted here -->
+        </main>
+    </div>
+    
+    <div id="guidanceModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" id="closeModalBtn">&times;</span>
+            <div id="modal-body-content"></div>
+        </div>
+    </div>
+
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+        const ALL_CONTROLS = [
+            // ACCESS CONTROL (AC) - 4 Controls
+            {
+                id: 'AC_L1-3_1_1', family: 'Access Control', title: 'AC.L1-3.1.1 - Authorized Access Control',
+                description: 'Limit system access to authorized users, processes acting on behalf of authorized users, and devices (including other systems).',
+                what_to_do: 'You must ensure that only approved individuals, computers, and software can access your company’s network and data. This means creating a clear "guest list" for your digital environment and strictly enforcing it.',
+                how_to_do: `<h4>Leveraging MVL Group's Technology Stack:</h4><ul><li><strong>Microsoft 365 G5 (Azure AD):</strong> Create unique user accounts for every employee. Do not use shared accounts.</li><li><strong>Microsoft Endpoint Manager (Intune):</strong> Register all company devices (laptops, phones) to create an inventory of trusted hardware.</li><li><strong>Azure AD Conditional Access:</strong> Create policies that only allow access from registered (compliant) devices and trusted locations.</li><li><strong>Zscaler Private Access (ZPA):</strong> Ensure remote users can only access specific internal applications after authentication and device verification.</li><li><strong>Actimo LMS:</strong> Deploy training on the importance of not sharing credentials.</li></ul>`,
+                checklist: `<ul><li>Maintain a current list of all authorized users.</li><li>Keep an inventory of all authorized devices.</li><li>Verify that access controls deny unauthorized connection attempts.</li><li>Disable accounts and remove device access immediately upon employee termination.</li><li>Formalize rules in an official Access Control Policy document.</li></ul>`,
+                process_steps: [
+                    { type: 'assess', text: 'Define & Document who is authorized (users, devices, processes).' },
+                    { type: 'implement', text: 'Configure access controls in Azure AD, Intune, and Zscaler.' },
+                    { type: 'monitor', text: 'Regularly audit user accounts and device compliance lists.' },
+                    { type: 'respond', text: 'Disable/remove access for unauthorized entities immediately upon discovery.' },
+                    { type: 'improve', text: 'Review and update the Access Control policy annually or as needed.' }
+                ],
+                official_guidance: `<h3>NIST SP 800-171 R2 - 3.1.1</h3><p>Limits information system access to authorized users, processes acting on behalf of authorized users, or devices (including other information systems).</p><a href="https://csrc.nist.gov/pubs/sp/800/171/r2/upd1/final" target="_blank">View Full Document</a>`
+            },
+            {
+                id: 'AC_L1-3_1_2', family: 'Access Control', title: 'AC.L1-3.1.2 - Transaction & Function Control',
+                description: 'Limit information system access to the types of transactions and functions that authorized users are permitted to execute.',
+                what_to_do: 'Enforce "least privilege." This means users should only be able to perform actions and access data that is absolutely necessary for their job roles.',
+                how_to_do: `<h4>Leveraging MVL Group's Technology Stack:</h4><ul><li><strong>Microsoft 365 G5 (Azure AD):</strong> Utilize Role-Based Access Control (RBAC). Assign users to predefined roles.</li><li><strong>SharePoint Online / Teams:</strong> Configure permissions at the site, library, and folder level.</li><li><strong>Zscaler Private Access (ZPA):</strong> Create granular access policies that define which user groups can access which internal applications.</li></ul>`,
+                checklist: `<ul><li>Document all user roles and their specific, permitted functions.</li><li>Assign all users to a defined role.</li><li>Limit administrator privileges to only essential IT personnel.</li><li>Regularly test permissions by attempting to perform an unauthorized action.</li></ul>`,
+                process_steps: [
+                    { type: 'assess', text: 'Define user roles and document the specific functions each role can perform.' },
+                    { type: 'implement', text: 'Apply these roles using Azure AD RBAC and SharePoint permissions.' },
+                    { type: 'monitor', text: 'Periodically audit role assignments to ensure no privilege creep has occurred.' },
+                    { type: 'respond', text: 'Correct any excessive permissions found during audits.' },
+                    { type: 'improve', text: 'Refine roles as job duties change to maintain least privilege.' }
+                ],
+                official_guidance: `<h3>NIST SP 800-171 R2 - 3.1.2</h3><p>Limits information system access to the types of transactions and functions that authorized users are permitted to execute.</p><a href="https://csrc.nist.gov/pubs/sp/800/171/r2/upd1/final" target="_blank">View Full Document</a>`
+            },
+            {
+                id: 'AC_L1-3_1_20', family: 'Access Control', title: 'AC.L1-3.1.20 - External Connections',
+                description: 'Verify and control/limit connections to and use of external information systems.',
+                what_to_do: 'Manage how employees use external systems (e.g., personal devices, third-party cloud services) to prevent data exposure.',
+                how_to_do: `<h4>Leveraging MVL Group's Technology Stack:</h4><ul><li><strong>Azure AD Conditional Access:</strong> Block logins from unmanaged (personal) devices.</li><li><strong>Zscaler:</strong> Enforce web usage policies to block unauthorized cloud storage.</li><li><strong>Actimo LMS:</strong> Train users on approved vs. unapproved external tools.</li></ul>`,
+                checklist: `<ul><li>Identify all scenarios where data might go to an external system.</li><li>Enforce use of trusted devices and locations for access.</li><li>Require management approval for permitted external system use.</li><li>Verify data is not stored on unauthorized cloud services.</li></ul>`,
+                 process_steps: [
+                    { type: 'assess', text: 'Identify and document all necessary external systems and cloud services.' },
+                    { type: 'implement', text: 'Configure Zscaler to block unapproved services and Azure AD to block unmanaged devices.' },
+                    { type: 'monitor', text: 'Review Zscaler logs for attempts to access blocked services.' },
+                    { type: 'respond', text: 'Investigate and address policy violations when they occur.' },
+                    { type: 'improve', text: 'Update the list of approved/blocked external services as business needs evolve.' }
+                ],
+                official_guidance: `<h3>NIST SP 800-171 R2 - 3.1.20</h3><p>Verifies and controls/limits connections to and use of external information systems.</p><a href="https://csrc.nist.gov/pubs/sp/800/171/r2/upd1/final" target="_blank">View Full Document</a>`
+            },
+            {
+                id: 'AC_L1-3_1_22', family: 'Access Control', title: 'AC.L1-3.1.22 - Control Public Information',
+                description: 'Control information posted or processed on publicly accessible information systems.',
+                what_to_do: 'Prevent sensitive Federal Contract Information (FCI) from being posted on public websites. Only authorized individuals should be able to post publicly, with a review process in place.',
+                how_to_do: `<h4>Leveraging MVL Group's Technology Stack:</h4><ul><li><strong>Azure AD PIM:</strong> Strictly control who can publish content.</li><li><strong>SharePoint/Power Automate:</strong> Implement a content approval workflow.</li><li><strong>Microsoft Purview (DLP):</strong> Detect and block attempts to upload sensitive data.</li><li><strong>Actimo LMS:</strong> Train employees on what is considered FCI.</li></ul>`,
+                checklist: `<ul><li>Maintain a list of personnel authorized to post on public systems.</li><li>Establish procedures for content review and approval.</li><li>Periodically review existing public content.</li><li>Verify public systems are isolated from internal data.</li></ul>`,
+                 process_steps: [
+                    { type: 'assess', text: 'Define what constitutes public information vs. FCI and document who is authorized to post.' },
+                    { type: 'implement', text: 'Set up an approval workflow and a DLP policy to scan for FCI in outbound traffic.' },
+                    { type: 'monitor', text: 'Audit public-facing websites and DLP logs for potential FCI exposure.' },
+                    { type: 'respond', text: 'Immediately remove any identified FCI from public systems.' },
+                    { type: 'improve', text: 'Refine DLP rules and approval workflows based on audit findings.' }
+                ],
+                official_guidance: `<h3>NIST SP 800-171 R2 - 3.1.22</h3><p>Controls information posted or processed on publicly accessible information systems.</p><a href="https://csrc.nist.gov/pubs/sp/800/171/r2/upd1/final" target="_blank">View Full Document</a>`
+            },
+            {
+                id: 'IA_L1-3_5_1', family: 'Identification & Authentication', title: 'IA.L1-3.5.1 - Identification',
+                description: 'Identify system users, processes acting on behalf of users, and devices.',
+                what_to_do: 'Uniquely identify every user, process, and device. This means no shared accounts, clear assignment of user IDs, and an inventory of authorized devices.',
+                how_to_do: `<h4>Leveraging MVL Group's Technology Stack:</h4><ul><li><strong>Azure AD:</strong> Provision unique user IDs for all staff.</li><li><strong>Intune:</strong> Automatically registers and assigns a unique device ID to all managed endpoints.</li><li><strong>Zscaler:</strong> Integrates with Azure AD SSO for network access identification.</li><li><strong>Actimo LMS:</strong> Reinforce the policy of "no shared accounts" through training.</li></ul>`,
+                checklist: `<ul><li>Ensure a one-to-one relationship between individuals and user accounts.</li><li>Document all service accounts and their owners.</li><li>Maintain a list of authorized devices with unique identifiers.</li><li>Verify identification extends to network devices.</li></ul>`,
+                process_steps: [
+                    { type: 'assess', text: 'Establish policies for unique identification for all users, devices, and service accounts.' },
+                    { type: 'implement', text: 'Provision unique IDs in Azure AD and enroll devices in Intune.' },
+                    { type: 'monitor', text: 'Regularly audit for shared or orphaned accounts and unregistered devices.' },
+                    { type: 'respond', text: 'Disable shared accounts and enforce enrollment for non-compliant devices.' },
+                    { type: 'improve', text: 'Automate the user/device lifecycle process from onboarding to offboarding.' }
+                ],
+                official_guidance: `<h3>NIST SP 800-171 R2 - 3.5.1</h3><p>Identifies information system users, processes acting on behalf of users, or devices.</p><a href="https://csrc.nist.gov/pubs/sp/800/171/r2/upd1/final" target="_blank">View Full Document</a>`
+            },
+            {
+                id: 'IA_L1-3_5_2', family: 'Identification & Authentication', title: 'IA.L1-3.5.2 - Authentication',
+                description: 'Authenticate (or verify) the identities of those users, processes, or devices, as a prerequisite to allowing access to organizational information systems.',
+                what_to_do: 'Verify all identities before granting access. Having an ID isn’t enough; each user must prove it is who it claims to be using passwords and Multi-Factor Authentication (MFA).',
+                how_to_do: `<h4>Leveraging MVL Group's Technology Stack:</h4><ul><li><strong>Azure AD:</strong> Enforce Multi-Factor Authentication (MFA) for all user logins via Conditional Access.</li><li><strong>Zscaler:</strong> Integrates with Azure AD to enforce MFA before network access.</li><li><strong>Acronis:</strong> Integrate account access with Azure AD for authenticated backup access.</li><li><strong>Actimo:</strong> Educate users on MFA importance and credential safety.</li></ul>`,
+                checklist: `<ul><li>MFA is enabled and enforced for all user accounts.</li><li>Password policies meet complexity and length standards.</li><li>Device authentication is required for corporate resource access.</li><li>Service account credentials are secured and rotated.</li><li>Legacy authentication protocols are disabled.</li></ul>`,
+                process_steps: [
+                    { type: 'assess', text: 'Define strong authentication requirements, including mandatory MFA.' },
+                    { type: 'implement', text: 'Enforce MFA for all users via Azure AD Conditional Access policies.' },
+                    { type: 'monitor', text: 'Review Azure AD sign-in logs for legacy authentication attempts or MFA failures.' },
+                    { type: 'respond', text: 'Block legacy authentication and assist users with MFA enrollment issues.' },
+                    { type: 'improve', text: 'Explore and pilot passwordless authentication methods for higher security.' }
+                ],
+                official_guidance: `<h3>NIST SP 800-171 R2 - 3.5.2</h3><p>Authenticates (or verifies) the identities of users, processes, or devices as a prerequisite to allowing access to organizational systems.</p><a href="https://csrc.nist.gov/pubs/sp/800/171/r2/upd1/final" target="_blank">View Full Document</a>`
+            },
+            {
+                id: 'MP_L1-3_8_3', family: 'Media Protection', title: 'MP.L1-3.8.3 - Media Disposal',
+                description: 'Sanitize or destroy information system media containing Federal Contract Information before disposal or release for reuse.',
+                what_to_do: 'Properly wipe or destroy any storage media (hard drives, USB sticks, paper files) that contained FCI before getting rid of it, ensuring data is irretrievable.',
+                how_to_do: `<h4>Leveraging MVL Group's Technology Stack:</h4><ul><li><strong>BitLocker (Microsoft 365):</strong> Encrypt all hard drives. Deleting the key upon decommission renders data unreadable.</li><li><strong>Acronis Backup:</strong> Back up necessary data before wiping a device.</li><li><strong>Third-Party Disposal Service:</strong> Engage a certified vendor for physical destruction of media.</li><li><strong>Actimo LMS:</strong> Train staff on proper disposal procedures.</li></ul>`,
+                checklist: `<ul><li>All media are identified before disposal.</li><li>Media containing FCI is sanitized (wiped) or destroyed (shredded).</li><li>A certificate of destruction is obtained for destroyed media.</li><li>Ensure data is backed up before device disposal.</li></ul>`,
+                process_steps: [
+                    { type: 'assess', text: 'Create an inventory of all media types that could contain FCI (drives, tapes, paper).' },
+                    { type: 'implement', text: 'Establish a formal process for media disposal, including backup, sanitization, and destruction.' },
+                    { type: 'monitor', text: 'Track all media disposals and maintain certificates of destruction from vendors.' },
+                    { type: 'respond', text: 'Investigate any instances of improper media disposal.' },
+                    { type: 'improve', text: 'Periodically review and update the disposal policy and procedures.' }
+                ],
+                official_guidance: `<h3>NIST SP 800-171 R2 - 3.8.3</h3><p>Sanitizes or destroys information system media containing Federal Contract Information before disposal or release for reuse.</p><a href="https://csrc.nist.gov/pubs/sp/800/171/r2/upd1/final" target="_blank">View Full Document</a>`
+            },
+            {
+                id: 'PE_L1-3_10_1', family: 'Physical Protection', title: 'PE.L1-3.10.1 - Limit Physical Access',
+                description: 'Limit physical access to organizational information systems, equipment, and the respective operating environments to authorized individuals.',
+                what_to_do: 'Ensure only authorized people can get near company computers, servers, and networking equipment by securing offices and server rooms.',
+                how_to_do: `<h4>Implementation (Largely non-technical):</h4><ul><li><strong>Physical Security:</strong> Use electronic badge systems or lock-and-key for offices and server rooms.</li><li><strong>Access Lists:</strong> Maintain a list of personnel authorized for each secure area.</li><li><strong>Actimo LMS:</strong> Train employees on physical security policies like not "tailgating".</li></ul>`,
+                checklist: `<ul><li>Identify all areas housing FCI or critical systems.</li><li>Restrict access to those areas with physical controls.</li><li>Maintain and review a list of authorized personnel.</li><li>Revoke physical access upon employee departure.</li></ul>`,
+                 process_steps: [
+                    { type: 'assess', text: 'Identify and map all sensitive areas requiring physical access control.' },
+                    { type: 'implement', text: 'Install and configure locks or badge readers for all identified areas.' },
+                    { type: 'monitor', text: 'Review physical access logs for unauthorized entry attempts.' },
+                    { type: 'respond', text: 'Investigate tailgating or forced entry events.' },
+                    { type: 'improve', text: 'Periodically audit access lists and remove unneeded permissions.' }
+                ],
+                official_guidance: `<h3>NIST SP 800-171 R2 - 3.10.1</h3><p>Limits physical access to organizational information systems, equipment, and the respective operating environments to authorized individuals.</p><a href="https://csrc.nist.gov/pubs/sp/800/171/r2/upd1/final" target="_blank">View Full Document</a>`
+            },
+            {
+                id: 'PE_L1-3_10_3', family: 'Physical Protection', title: 'PE.L1-3.10.3 - Escort Visitors',
+                description: 'Escort visitors and monitor visitor activity.',
+                what_to_do: 'Visitors must not be left alone in areas with access to MVL systems. They should be signed in, given badges, and accompanied by an employee.',
+                how_to_do: `<h4>Implementation:</h4><ul><li><strong>Visitor Management:</strong> Establish a visitor procedure requiring sign-in, host identification, and visitor badges.</li><li><strong>Escort Policy:</strong> Instruct employees via Actimo that visitors must be escorted in non-public areas.</li><li><strong>Monitoring:</strong> Use security cameras if available; train staff to challenge unescorted individuals.</li></ul>`,
+                checklist: `<ul><li>Visitors are logged upon entry.</li><li>Visitor badges are issued.</li><li>Policy requires an escort for visitors in sensitive areas.</li><li>Visitor activities are monitored.</li></ul>`,
+                process_steps: [
+                    { type: 'assess', text: 'Create a formal visitor policy that mandates sign-in, badging, and escorts.' },
+                    { type: 'implement', text: 'Set up a visitor log at reception and provide distinct visitor badges.' },
+                    { type: 'monitor', text: 'Reception and employees monitor for unescorted or unbadged individuals.' },
+                    { type: 'respond', text: 'Politely challenge any unescorted visitors and locate their host.' },
+                    { type: 'improve', text: 'Provide refresher training to all employees on the visitor and escort policy.' }
+                ],
+                official_guidance: `<h3>NIST SP 800-171 R2 - 3.10.3</h3><p>Escorts visitors and monitors visitor activity.</p><a href="https://csrc.nist.gov/pubs/sp/800/171/r2/upd1/final" target="_blank">View Full Document</a>`
+            },
+            {
+                id: 'PE_L1-3_10_4', family: 'Physical Protection', title: 'PE.L1-3.10.4 - Physical Access Logs',
+                description: 'Maintain audit logs of physical access.',
+                what_to_do: 'Record entries and exits to sensitive facilities to have a traceable record of who was in secure areas and when.',
+                how_to_do: `<h4>Implementation:</h4><ul><li><strong>Electronic Systems:</strong> Use logging from badge entry systems.</li><li><strong>Manual Logs:</strong> Maintain sign-in/out sheets for visitors and after-hours access.</li><li><strong>Log Storage:</strong> Ensure logs are safely stored and protected.</li><li><strong>Actimo LMS:</strong> Remind staff to not bypass logging procedures.</li></ul>`,
+                checklist: `<ul><li>Electronic access logs are enabled and retained.</li><li>Visitor log records are complete and kept for all guests.</li><li>Logs include sufficient detail to identify individuals.</li><li>Logs are secured and periodically reviewed.</li></ul>`,
+                 process_steps: [
+                    { type: 'assess', text: 'Determine which areas require physical access logging.' },
+                    { type: 'implement', text: 'Enable electronic logging on badge systems and implement manual visitor logs.' },
+                    { type: 'monitor', text: 'Ensure logs are being captured completely and are stored securely.' },
+                    { type: 'respond', text: 'Review logs periodically for suspicious activity or patterns.' },
+                    { type: 'improve', text: 'Adjust log retention periods based on security requirements.' }
+                ],
+                official_guidance: `<h3>NIST SP 800-171 R2 - 3.10.4</h3><p>Maintains audit logs of physical access.</p><a href="https://csrc.nist.gov/pubs/sp/800/171/r2/upd1/final" target="_blank">View Full Document</a>`
+            },
+            {
+                id: 'PE_L1-3_10_5', family: 'Physical Protection', title: 'PE.L1-3.10.5 - Manage Physical Access Devices',
+                description: 'Control and manage physical access devices.',
+                what_to_do: 'Carefully issue, track, and retrieve physical access devices like keys and access cards. Change locks or codes if security is compromised.',
+                how_to_do: `<h4>Implementation:</h4><ul><li><strong>Inventory:</strong> Maintain a key and badge inventory.</li><li><strong>Badge Management System:</strong> Use to assign and deactivate cards.</li><li><strong>Key Control:</strong> Have a formal check-out/check-in process.</li><li><strong>Actimo LMS:</strong> Train staff to report lost devices immediately.</li></ul>`,
+                checklist: `<ul><li>Every key/card is accounted for and assigned.</li><li>A deactivation/return process is enforced for departures.</li><li>Spare keys/cards are secured.</li><li>Door codes are changed periodically.</li></ul>`,
+                process_steps: [
+                    { type: 'assess', text: 'Create and maintain a complete inventory of all keys, badges, and codes.' },
+                    { type: 'implement', text: 'Implement a formal check-in/check-out process for all physical access devices.' },
+                    { type: 'monitor', text: 'Audit the inventory against employee records regularly.' },
+                    { type: 'respond', text: 'Immediately deactivate and retrieve devices from departing employees, and change codes if compromised.' },
+                    { type: 'improve', text: 'Review and strengthen inventory management processes.' }
+                ],
+                official_guidance: `<h3>NIST SP 800-171 R2 - 3.10.5</h3><p>Controls and manages physical access devices.</p><a href="https://csrc.nist.gov/pubs/sp/800/171/r2/upd1/final" target="_blank">View Full Document</a>`
+            },
+            {
+                id: 'SC_L1-3_13_1', family: 'System & Communications Protection', title: 'SC.L1-3.13.1 - Boundary Protection',
+                description: 'Monitor, control, and protect communications at the external boundaries and key internal boundaries of the information systems.',
+                what_to_do: 'Guard your network borders where they connect to the internet. Use firewalls and filters to inspect and restrict traffic.',
+                how_to_do: `<h4>Leveraging MVL Group's Technology Stack:</h4><ul><li><strong>Zscaler Internet Access (ZIA):</strong> Acts as a secure web gateway to inspect all internet traffic.</li><li><strong>Zscaler Private Access (ZPA):</strong> Implements a zero-trust model, hiding internal applications.</li><li><strong>Network Segmentation:</strong> Create separate network segments (e.g., guest Wi-Fi) isolated from the corporate network.</li></ul>`,
+                checklist: `<ul><li>A network diagram exists showing all connection points.</li><li>Firewall rules are configured to default-deny inbound traffic.</li><li>Internal boundary protections are implemented if needed.</li><li>Traffic monitoring logs are enabled and reviewed.</li></ul>`,
+                process_steps: [
+                    { type: 'assess', text: 'Map all network boundaries, including internet egress points and internal segments.' },
+                    { type: 'implement', text: 'Deploy Zscaler for all internet traffic and configure firewall rules to deny all traffic by default.' },
+                    { type: 'monitor', text: 'Actively review Zscaler traffic logs and firewall alerts for threats.' },
+                    { type: 'respond', text: 'Block malicious IP addresses or URLs identified during monitoring.' },
+                    { type: 'improve', text: 'Fine-tune firewall rules to be more restrictive based on observed traffic patterns.' }
+                ],
+                official_guidance: `<h3>NIST SP 800-171 R2 - 3.13.1</h3><p>Monitors, controls, and protects organizational communications at the external and key internal boundaries of the information systems.</p><a href="https://csrc.nist.gov/pubs/sp/800/171/r2/upd1/final" target="_blank">View Full Document</a>`
+            },
+            {
+                id: 'SC_L1-3_13_5', family: 'System & Communications Protection', title: 'SC.L1-3.13.5 - Public System Separation',
+                description: 'Implement subnetworks for publicly accessible system components that are physically or logically separated from internal networks.',
+                what_to_do: 'If you have public systems (like a website), they must be isolated from your internal network to create a "DMZ".',
+                how_to_do: `<h4>Implementation:</h4><ul><li><strong>Network Architecture:</strong> Host public-facing services in a separate network segment (DMZ).</li><li><strong>Firewall Rules:</strong> Strictly control traffic between the DMZ and the internal network.</li><li><strong>Zscaler Private Access (ZPA):</strong> Inherently separates internal applications from the public internet.</li></ul>`,
+                checklist: `<ul><li>Identify all publicly accessible systems.</li><li>Confirm public components are on a separate network.</li><li>Firewall rules prevent direct access from the public zone to the internal network.</li><li>Test isolation via network scan.</li></ul>`,
+                process_steps: [
+                    { type: 'assess', text: 'Identify all publicly accessible systems (e.g., web servers).' },
+                    { type: 'implement', text: 'Place these systems in a separate, isolated network segment (DMZ).' },
+                    { type: 'monitor', text: 'Use a firewall to strictly control traffic between the DMZ and internal network.' },
+                    { type: 'respond', text: 'Run periodic penetration tests to validate the isolation.' },
+                    { type: 'improve', text: 'Ensure no new systems are deployed publicly without following this separation process.' }
+                ],
+                official_guidance: `<h3>NIST SP 800-171 R2 - 3.13.5</h3><p>Implements subnetworks for publicly-accessible system components that are physically or logically separated from internal networks.</p><a href="https://csrc.nist.gov/pubs/sp/800/171/r2/upd1/final" target="_blank">View Full Document</a>`
+            },
+            {
+                id: 'SI_L1-3_14_1', family: 'System and Information Integrity', title: 'SI.L1-3.14.1 - Flaw Remediation',
+                description: 'Identify, report, and correct information and information system flaws in a timely manner.',
+                what_to_do: 'Have a process to handle software and hardware vulnerabilities: find them (identify), track them (report), and fix them (patch) promptly.',
+                how_to_do: `<h4>Leveraging MVL Group's Technology Stack:</h4><ul><li><strong>Microsoft Defender Vulnerability Management:</strong> Scan for and identify missing patches.</li><li><strong>Intune/Windows Update for Business:</strong> Automatically deploy security patches.</li><li><strong>Acronis Backup:</strong> Ensure systems are backed up before major updates.</li><li><strong>Internal Ticketing System:</strong> Document and track internally reported flaws.</li></ul>`,
+                checklist: `<ul><li>Inventory all software and systems.</li><li>Apply critical security updates in a timely manner.</li><li>A process for internal flaw reporting exists.</li><li>Maintain evidence of patch management.</li></ul>`,
+                process_steps: [
+                    { type: 'assess', text: 'Continuously scan systems for vulnerabilities using Defender Vulnerability Management.' },
+                    { type: 'implement', text: 'Categorize flaws by severity and create a remediation plan.' },
+                    { type: 'implement', text: 'Deploy patches using Intune within the timeframes defined by policy.' },
+                    { type: 'monitor', text: 'Verify that patches were successfully installed and the vulnerability is resolved.' },
+                    { type: 'improve', text: 'Review patching metrics to shorten the time-to-remediate.' }
+                ],
+                official_guidance: `<h3>NIST SP 800-171 R2 - 3.14.1</h3><p>Identifies, reports, and corrects information and information system flaws in a timely manner.</p><a href="https://csrc.nist.gov/pubs/sp/800/171/r2/upd1/final" target="_blank">View Full Document</a>`
+            },
+            {
+                id: 'SI_L1-3_14_2', family: 'System and Information Integrity', title: 'SI.L1-3.14.2 - Malicious Code Protection',
+                description: 'Provide protection from malicious code at appropriate locations within organizational information systems.',
+                what_to_do: 'Deploy anti-malware (antivirus) protections at key places: all computers, servers, email gateways, and web traffic filters.',
+                how_to_do: `<h4>Leveraging MVL Group's Technology Stack:</h4><ul><li><strong>Microsoft Defender for Endpoint:</strong> Deploy on all endpoints.</li><li><strong>Microsoft Defender for Office 365:</strong> Scan all email attachments and links.</li><li><strong>Zscaler Internet Access (ZIA):</strong> Provides malware inspection for all web traffic.</li><li><strong>Acronis:</strong> Use the anti-ransomware feature as a secondary protection layer.</li></ul>`,
+                checklist: `<ul><li>Anti-malware is installed and running on all endpoints.</li><li>Email and web traffic have malware filtering enabled.</li><li>Test effectiveness with a benign test file (EICAR).</li></ul>`,
+                process_steps: [
+                    { type: 'assess', text: 'Identify all entry points for malicious code (email, web, removable media).' },
+                    { type: 'implement', text: 'Deploy Defender on endpoints, Defender for Office 365 for email, and Zscaler for web.' },
+                    { type: 'monitor', text: 'Review security dashboards for malware detection alerts.' },
+                    { type: 'respond', text: 'Isolate any infected machine from the network immediately.' },
+                    { type: 'improve', text: 'Use detection data to improve user awareness training on phishing and malware.' }
+                ],
+                official_guidance: `<h3>NIST SP 800-171 R2 - 3.14.2</h3><p>Provides protection from malicious code at appropriate locations within organizational information systems.</p><a href="https://csrc.nist.gov/pubs/sp/800/171/r2/upd1/final" target="_blank">View Full Document</a>`
+            },
+            {
+                id: 'SI_L1-3_14_4', family: 'System and Information Integrity', title: 'SI.L1-3.14.4 - Update Malicious Code Protection',
+                description: 'Update malicious code protection mechanisms when new releases are available.',
+                what_to_do: 'Keep your anti-malware tools up-to-date, including both the malware definition files (daily) and the software engine.',
+                how_to_do: `<h4>Leveraging MVL Group's Technology Stack:</h4><ul><li><strong>Microsoft Defender:</strong> Configure automatic definition updates via Intune policy.</li><li><strong>Intune/Windows Update:</strong> Push updates for the Defender engine.</li><li><strong>Zscaler:</strong> Cloud service updates automatically; keep client app updated.</li></ul>`,
+                checklist: `<ul><li>Signature updates are frequent (daily) and automatic.</li><li>Application/engine versions are current.</li><li>Monitor consoles to ensure no endpoints have old definitions.</li><li>Zscaler client is on the latest recommended version.</li></ul>`,
+                process_steps: [
+                    { type: 'assess', text: 'Establish a policy for automatic, daily updates of anti-malware definitions.' },
+                    { type: 'implement', text: 'Configure Intune and Defender policies to enforce automatic updates.' },
+                    { type: 'monitor', text: 'Use the Defender security portal to monitor the definition status of all devices.' },
+                    { type: 'respond', text: 'Troubleshoot and remediate any devices that fail to update.' },
+                    { type: 'improve', text: 'Ensure new devices are automatically enrolled in the update policy.' }
+                ],
+                official_guidance: `<h3>NIST SP 800-171 R2 - 3.14.4</h3><p>Updates malicious code protection mechanisms when new releases are available.</p><a href="https://csrc.nist.gov/pubs/sp/800/171/r2/upd1/final" target="_blank">View Full Document</a>`
+            },
+            {
+                id: 'SI_L1-3_14_5', family: 'System and Information Integrity', title: 'SI.L1-3.14.5 - System & File Scanning',
+                description: 'Perform periodic scans of the information system and real-time scans of files from external sources as files are downloaded, opened, or executed.',
+                what_to_do: 'Anti-malware must run both real-time scans of all incoming files and regular, scheduled full-system scans.',
+                how_to_do: `<h4>Leveraging MVL Group's Technology Stack:</h4><ul><li><strong>Microsoft Defender for Endpoint:</strong> Enable "Real-time protection" and configure a weekly "Full Scan".</li><li><strong>Zscaler Internet Access (ZIA):</strong> Scans all web downloads in real-time.</li><li><strong>Microsoft Defender for Office 365:</strong> Automatically scans email attachments and links.</li><li><strong>Actimo:</strong> Educate users not to disable or postpone scans.</li></ul>`,
+                checklist: `<ul><li>A scheduled scan is defined and running on endpoints.</li><li>Real-time protection is enabled and cannot be disabled by users.</li><li>AV logs are reviewed for completion and detections.</li><li>No significant folders are excluded from scans without justification.</li></ul>`,
+                process_steps: [
+                    { type: 'assess', text: 'Define policies for both real-time and scheduled scanning across all systems.' },
+                    { type: 'implement', text: 'Configure Defender policies in Intune to enforce real-time and weekly full scans.' },
+                    { type: 'monitor', text: 'Review Defender logs to ensure scans are running and check for any malware detections.' },
+                    { type: 'respond', text: 'Remediate any malware found during scans.' },
+                    { type: 'improve', text: 'Adjust scan schedules based on system performance and risk.' }
+                ],
+                official_guidance: `<h3>NIST SP 800-171 R2 - 3.14.5</h3><p>Performs periodic scans of the information system and real-time scans of files from external sources as files are downloaded, opened, or executed.</p><a href="https://csrc.nist.gov/pubs/sp/800/171/r2/upd1/final" target="_blank">View Full Document</a>`
+            }
+        ];
+        
+        const sidebarNavList = document.getElementById('sidebar-nav-list');
+        const mainContent = document.getElementById('main-content');
+        const modal = document.getElementById('guidanceModal');
+        const modalBody = document.getElementById('modal-body-content');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        const themeToggle = document.getElementById('theme-toggle');
+        const htmlEl = document.documentElement;
+        
+        const STATUSES = {
+            NOT_STARTED: 'Not Started',
+            IN_PROGRESS: 'In Progress',
+            NEEDS_REVIEW: 'Needs Review',
+            COMPLIANT: 'Compliant'
+        };
+
+        const STATUS_COLORS = {
+            [STATUSES.NOT_STARTED]: 'var(--status-not-started-text)',
+            [STATUSES.IN_PROGRESS]: 'var(--status-in-progress-text)',
+            [STATUSES.NEEDS_REVIEW]: 'var(--status-needs-review-text)',
+            [STATUSES.COMPLIANT]: 'var(--status-compliant-text)'
+        };
+
+
+        function updateDashboard() {
+            const progressBarContainer = document.getElementById('progress-bar-container');
+            const legendContainer = document.getElementById('chart-legend');
+
+            const counts = {
+                [STATUSES.NOT_STARTED]: 0,
+                [STATUSES.IN_PROGRESS]: 0,
+                [STATUSES.NEEDS_REVIEW]: 0,
+                [STATUSES.COMPLIANT]: 0,
+            };
+
+            ALL_CONTROLS.forEach(control => {
+                const status = localStorage.getItem(`status-${control.id}`) || STATUSES.NOT_STARTED;
+                counts[status]++;
+            });
+
+            const total = ALL_CONTROLS.length;
+            
+            progressBarContainer.innerHTML = Object.entries(counts).map(([status, count]) => {
+                const percentage = total > 0 ? (count / total) * 100 : 0;
+                if (percentage === 0) return '';
+                return `<div class="progress-segment" style="width: ${percentage}%; background-color: ${STATUS_COLORS[status]}" title="${status}: ${count} control(s)"></div>`;
+            }).join('');
+            
+            legendContainer.innerHTML = Object.entries(counts).map(([status, count]) => `
+                <div class="legend-item" data-status="${status}">
+                    <div class="legend-color" style="background-color: ${STATUS_COLORS[status]}"></div>
+                    <div class="legend-text">${status}</div>
+                    <div class="legend-value">${count}</div>
+                </div>
+            `).join('');
+        }
+
+        const ICONS = {
+            assess: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd" /></svg>`,
+            implement: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M10 3.75a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 3.75zM5.938 6.512a.75.75 0 011.06 0l1.061 1.06a.75.75 0 01-1.06 1.06L5.938 7.572a.75.75 0 010-1.06zM13.488 6.512a.75.75 0 010 1.06l-1.06 1.06a.75.75 0 01-1.06-1.06l1.06-1.06a.75.75 0 011.06 0zM3.75 10a.75.75 0 01.75-.75h1.5a.75.75 0 010 1.5h-1.5a.75.75 0 01-.75-.75zm11.25 0a.75.75 0 01.75-.75h1.5a.75.75 0 010 1.5h-1.5a.75.75 0 01-.75-.75zM5.938 13.488a.75.75 0 011.06 0l1.061-1.06a.75.75 0 111.06 1.06l-1.06 1.06a.75.75 0 01-1.06 0zM12.428 12.428a.75.75 0 011.06-1.06l1.06 1.06a.75.75 0 11-1.06 1.06l-1.06-1.06z" /><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM5.5 10a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0z" clip-rule="evenodd" /></svg>`,
+            monitor: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5z" /><path fill-rule="evenodd" d="M.664 10.59a1.651 1.651 0 010-1.18l.877-.584a.75.75 0 01.996.126l.09.125a.75.75 0 01-.126.996l-.877.585a1.651 1.651 0 01-1.06.118zM19.336 9.41a1.651 1.651 0 010 1.18l-.877.584a.75.75 0 01-.996-.126l-.09-.125a.75.75 0 01.126-.996l.877-.585a1.651 1.651 0 011.06-.118z" clip-rule="evenodd" /><path d="M16.105 17.205a1.651 1.651 0 01-1.18 0l-.584-.877a.75.75 0 01.126-.996l.125-.09a.75.75 0 01.996.126l.585.877a1.651 1.651 0 01-.072 1.06zM3.895 2.795a1.651 1.651 0 011.18 0l.584.877a.75.75 0 01-.126.996l-.125.09a.75.75 0 01-.996-.126L3.823 3.76a1.651 1.651 0 01.072-1.06z" /><path d="M17.205 3.895a1.651 1.651 0 010 1.18l-.877.584a.75.75 0 01-.996-.126l-.09-.125a.75.75 0 01.126-.996l.877-.585a1.651 1.651 0 011.06.118zM2.795 16.105a1.651 1.651 0 010-1.18l.877-.584a.75.75 0 01.996.126l.09.125a.75.75 0 01-.126.996l-.877.585a1.651 1.651 0 01-1.06.118z" /></svg>`,
+            respond: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" /></svg>`,
+            improve: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 2zM10 15a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 15zM10 7a3 3 0 100 6 3 3 0 000-6z" /><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-1.414 1.414a1 1 0 11-1.414-1.414l1.414-1.414a1 1 0 011.414 0zM5.293 3.293a1 1 0 011.414 0l1.414 1.414a1 1 0 01-1.414 1.414L5.293 4.707a1 1 0 010-1.414zM14.707 14.707a1 1 0 010-1.414l1.414-1.414a1 1 0 011.414 1.414l-1.414 1.414a1 1 0 01-1.414 0zM3.293 14.707a1 1 0 011.414 0l1.414-1.414a1 1 0 111.414 1.414l-1.414 1.414a1 1 0 01-1.414 0z" clip-rule="evenodd" /></svg>`
+        }
+        
+        function createProcessStepsHTML(steps) {
+            let html = '<div class="process-steps-container"><h4 class="process-title">Compliance Lifecycle</h4>';
+            steps.forEach((step, index) => {
+                const iconHtml = ICONS[step.type] || '';
+                html += `<div class="step">
+                           <div class="step-node">
+                               <div class="step-icon ${step.type}">${iconHtml}</div>
+                               <p class="step-text">${step.text}</p>
+                           </div>
+                           ${index < steps.length - 1 ? '<div class="step-arrow">&#8595;</div>' : ''}
+                       </div>`;
+            });
+            html += '</div>';
+            return html;
+        }
+
+        const groupedControls = ALL_CONTROLS.reduce((acc, control) => {
+            (acc[control.family] = acc[control.family] || []).push(control);
+            return acc;
+        }, {});
+
+        for (const family in groupedControls) {
+            const navGroup = document.createElement('li');
+            navGroup.className = 'nav-group';
+            navGroup.innerHTML = `
+                <div class="nav-group-header">
+                    <span>${family}</span>
+                    <span class="arrow">&#x276F;</span>
+                </div>
+                <ul class="sub-nav-list"></ul>
+            `;
+            const subNavList = navGroup.querySelector('.sub-nav-list');
+            
+            groupedControls[family].forEach(control => {
+                const subLi = document.createElement('li');
+                subLi.innerHTML = `<a href="#${control.id}">${control.title.split(' - ')[0]}</a>`;
+                subNavList.appendChild(subLi);
+
+                const section = document.createElement('section');
+                section.id = control.id;
+                section.className = 'control-section';
+                
+                const savedStatus = localStorage.getItem(`status-${control.id}`) || STATUSES.NOT_STARTED;
+                const statusOptions = Object.values(STATUSES).map(status =>
+                    `<div class="status-option ${savedStatus === status ? 'selected' : ''}" data-status="${status}">${status}</div>`
+                ).join('');
+                
+                const processStepsHTML = createProcessStepsHTML(control.process_steps);
+
+                section.innerHTML = `
+                    <div class="control-header">
+                        <h2>${control.title}</h2>
+                        <p>${control.description}</p>
+                    </div>
+                    <div class="control-body">
+                        <div class="control-info">
+                            <div class="tabs">
+                                <button class="tab-button active" data-tab="what-to-do">What to Do</button>
+                                <button class="tab-button" data-tab="how-to-do">How to Implement</button>
+                                <button class="tab-button" data-tab="checklist">Audit Checklist</button>
+                                <button class="tab-button" data-tab="status">Status</button>
+                            </div>
+                            <div id="what-to-do-${control.id}" class="tab-content active">
+                                <p>${control.what_to_do}</p>
+                                <a href="#" class="official-guidance-btn" data-id="${control.id}">View Official Guidance</a>
+                            </div>
+                            <div id="how-to-do-${control.id}" class="tab-content">
+                                ${control.how_to_do}
+                            </div>
+                            <div id="checklist-${control.id}" class="tab-content">
+                                ${control.checklist}
+                            </div>
+                             <div id="status-${control.id}" class="tab-content">
+                                <h4>Set Compliance Status</h4>
+                                <div class="status-selector" data-control-id="${control.id}">
+                                    ${statusOptions}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="control-visual">
+                            ${processStepsHTML}
+                        </div>
+                    </div>
+                `;
+                mainContent.appendChild(section);
+            });
+            sidebarNavList.appendChild(navGroup);
+        }
+
+        sidebarNavList.addEventListener('click', (e) => {
+            const header = e.target.closest('.nav-group-header');
+            if (header) {
+                header.parentElement.classList.toggle('open');
+            }
+        });
+
+        mainContent.addEventListener('click', (e) => {
+            if (e.target.matches('.tab-button')) {
+                const tabContainer = e.target.closest('.control-info');
+                const targetTab = e.target.dataset.tab;
+                tabContainer.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+                e.target.classList.add('active');
+                tabContainer.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.remove('active');
+                    if (content.id.startsWith(targetTab)) {
+                        content.classList.add('active');
+                    }
+                });
+            }
+            if (e.target.matches('.official-guidance-btn')) {
+                e.preventDefault();
+                const controlId = e.target.dataset.id;
+                const controlData = ALL_CONTROLS.find(c => c.id === controlId);
+                modalBody.innerHTML = controlData.official_guidance;
+                modal.style.display = 'block';
+            }
+             if (e.target.matches('.status-option')) {
+                const selector = e.target.closest('.status-selector');
+                const controlId = selector.dataset.controlId;
+                const newStatus = e.target.dataset.status;
+
+                localStorage.setItem(`status-${controlId}`, newStatus);
+
+                selector.querySelectorAll('.status-option').forEach(opt => opt.classList.remove('selected'));
+                e.target.classList.add('selected');
+                
+                updateDashboard();
+            }
+        });
+        
+        document.getElementById('chart-legend').addEventListener('click', (e) => {
+            const legendItem = e.target.closest('.legend-item');
+            if(legendItem) {
+                const statusToFind = legendItem.dataset.status;
+                const firstMatchingControl = ALL_CONTROLS.find(control => (localStorage.getItem(`status-${control.id}`) || STATUSES.NOT_STARTED) === statusToFind);
+                if(firstMatchingControl) {
+                    document.getElementById(firstMatchingControl.id).scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }
+        });
+
+        closeModalBtn.onclick = () => modal.style.display = 'none';
+        window.onclick = (e) => { if (e.target === modal) { modal.style.display = 'none'; } };
+
+        const currentTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        htmlEl.setAttribute('data-theme', currentTheme);
+        themeToggle.checked = currentTheme === 'dark';
+        
+        themeToggle.addEventListener('change', (e) => {
+            const newTheme = e.target.checked ? 'dark' : 'light';
+            htmlEl.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+        });
+
+        const navLinks = document.querySelectorAll('.sub-nav-list a');
+        const sections = document.querySelectorAll('.control-section');
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const id = entry.target.id;
+                    const activeLink = document.querySelector(`.sub-nav-list a[href="#${id}"]`);
+                    navLinks.forEach(link => link.classList.remove('active'));
+                    if (activeLink) {
+                        activeLink.classList.add('active');
+                        const parentGroup = activeLink.closest('.nav-group');
+                         if (parentGroup && !parentGroup.classList.contains('open')) {
+                           document.querySelectorAll('.nav-group').forEach(group => group.classList.remove('open'));
+                           parentGroup.classList.add('open');
+                        }
+                    }
+                }
+            });
+        }, { rootMargin: '-20% 0px -75% 0px' });
+        sections.forEach(section => observer.observe(section));
+        
+        const menuToggleBtn = document.getElementById('menu-toggle-btn');
+        const sidebar = document.getElementById('sidebar-nav');
+        menuToggleBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            sidebar.classList.toggle('open')
+        });
+        document.body.addEventListener('click', (e) => {
+            if (sidebar.classList.contains('open') && !sidebar.contains(e.target) && e.target !== menuToggleBtn) {
+                 sidebar.classList.remove('open');
+            }
+        });
+
+        // Initial call
+        updateDashboard();
+    });
+    </script>
+</body>
+</html>
