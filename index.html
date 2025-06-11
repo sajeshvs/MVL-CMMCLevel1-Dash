@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MVL Group - CMMC Level 1 Interactive Dashboard</title>
+    <title>MVL Group - CMMC Level 1 Dashboard (NIST SP 800-171 Rev. 3)</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -68,8 +68,18 @@
             align-items: center; position: fixed; top: 0; left: 0; z-index: 1000;
             box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
+        .header-left { display: flex; align-items: center; gap: 15px; flex-grow: 1; }
+        .logo-link { text-decoration: none; display: flex; align-items: center; }
         .logo { font-size: 1.5rem; font-weight: 700; color: var(--logo-color); display: flex; align-items: center; }
         .logo-svg { width: 100px; height: 36px; margin-right: 12px; }
+        .page-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-align: center;
+            flex-grow: 1;
+        }
+        .header-actions { display: flex; align-items: center; gap: 20px; flex-shrink: 0; }
         .theme-switch-wrapper { display: flex; align-items: center; }
         .theme-switch { position: relative; display: inline-block; width: 50px; height: 28px; }
         .theme-switch input { opacity: 0; width: 0; height: 0; }
@@ -77,11 +87,34 @@
         .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
         input:checked + .slider { background-color: var(--primary-color); }
         input:checked + .slider:before { transform: translateX(22px); }
+        .header-button {
+            background-color: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .header-button:hover {
+            background-color: var(--step-bg);
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
 
         /* --- Sidebar Navigation --- */
         .sidebar {
             width: 320px; background-color: var(--bg-secondary-color); border-right: 1px solid var(--border-color);
             position: fixed; top: 73px; bottom: 0; padding: 20px 0; overflow-y: auto;
+        }
+        .sidebar-heading {
+            padding: 0 30px 10px 30px;
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 10px;
         }
         .sidebar-nav-list, .sub-nav-list { list-style: none; }
         .nav-group-header {
@@ -108,6 +141,30 @@
             padding: 93px 40px 40px 40px;
         }
         
+        /* --- Filters & Exports --- */
+        .main-controls {
+            background-color: var(--bg-secondary-color);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px 30px;
+            margin-bottom: 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .filter-group { display: flex; gap: 15px; flex-wrap: wrap; }
+        .filter-group select {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-secondary-color);
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+        .export-group { display: flex; gap: 15px; }
+
         /* --- Compliance Overview Dashboard --- */
         .compliance-overview {
             background-color: var(--bg-secondary-color);
@@ -141,9 +198,7 @@
             cursor: pointer;
             filter: brightness(1);
         }
-        .progress-segment:hover {
-            filter: brightness(1.1);
-        }
+        .progress-segment:hover { filter: brightness(1.1); }
         .legend {
             display: flex;
             flex-wrap: wrap;
@@ -159,9 +214,7 @@
             border-radius: 6px;
             transition: background-color 0.2s;
         }
-        .legend-item:hover {
-            background-color: var(--step-bg);
-        }
+        .legend-item:hover { background-color: var(--step-bg); }
         .legend-color {
             width: 12px;
             height: 12px;
@@ -199,9 +252,13 @@
             text-align: center;
         }
         .step {
+            position: relative;
             display: flex;
             flex-direction: column;
             align-items: center;
+        }
+        .step:not(:last-child) .step-arrow {
+            display: block;
         }
         .step-node {
             display: flex;
@@ -212,7 +269,9 @@
             padding: 12px 15px;
             width: 100%;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            position: relative;
         }
+        .step-node:hover .step-tooltip { opacity: 1; visibility: visible; transform: translateY(0); }
         .step-icon {
             width: 32px;
             height: 32px;
@@ -239,12 +298,41 @@
             line-height: 1.4;
         }
         .step-arrow {
+            display: none;
             color: var(--border-color);
             font-size: 1.5rem;
             margin: 8px 0;
         }
         .step:not(:last-child) .step-arrow {
              display: block;
+        }
+
+        .step-tooltip {
+            position: absolute;
+            bottom: 110%;
+            left: 50%;
+            transform: translateX(-50%) translateY(10px);
+            background-color: var(--text-primary);
+            color: var(--bg-secondary-color);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            width: max-content;
+            max-width: 250px;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s, transform 0.2s, visibility 0.2s;
+            z-index: 10;
+        }
+        .step-tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: var(--text-primary) transparent transparent transparent;
         }
 
         .tabs { display: flex; border-bottom: 1px solid var(--border-color); margin-bottom: 25px; flex-wrap: wrap; }
@@ -261,6 +349,15 @@
         .tab-content li { padding-left: 20px; position: relative; margin-bottom: 8px; }
         .tab-content li::before { content: '✓'; color: var(--primary-color); position: absolute; left: 0; font-weight: bold; }
         .tab-content strong { color: var(--text-primary); font-weight: 600;}
+        .nist-text-container {
+            margin-top: 15px;
+            padding: 15px;
+            background-color: var(--step-bg);
+            border-left: 4px solid var(--primary-color);
+            border-radius: 4px;
+        }
+        .nist-text-container p { font-style: italic; color: var(--text-secondary); }
+
 
         /* Status Tab Styles */
         .status-selector { display: flex; gap: 10px; flex-wrap: wrap; }
@@ -287,6 +384,8 @@
         #modal-body-content h3 { color: var(--primary-color); margin-bottom: 15px; }
         #modal-body-content p { color: var(--text-secondary); line-height: 1.7; }
         #modal-body-content a { color: var(--primary-color); }
+        .glossary-term { font-weight: 600; color: var(--text-primary); }
+        .glossary-def { margin-bottom: 1em; }
 
         /* Responsive */
         @media (max-width: 1200px) { .control-body { flex-direction: column; } .dashboard-content { flex-direction: column; align-items: stretch;} }
@@ -296,44 +395,97 @@
             .main-content { margin-left: 0; }
             .menu-toggle { display: block; cursor: pointer; z-index: 1200; }
             .header { padding-left: 20px; padding-right: 20px; }
+            .page-title { display: none; }
         }
         .menu-toggle { display: none; font-size: 1.5rem; margin-right: 15px; background: none; border: none; color: var(--text-primary); }
+
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            .main-content, .main-content * {
+                visibility: visible;
+            }
+            .main-content {
+                position: absolute;
+                left: 0;
+                top: 0;
+                margin-left: 0;
+                padding: 20px;
+            }
+            .sidebar, .header, .main-controls, .official-guidance-btn, .status-selector, button[data-tab="status"] {
+                display: none !important;
+            }
+            .control-body {
+                display: block;
+            }
+            .control-visual {
+                page-break-before: always;
+            }
+            .control-section {
+                box-shadow: none;
+                border: 1px solid #ccc;
+                page-break-inside: avoid;
+            }
+        }
+
     </style>
 </head>
 <body>
 
     <header class="header">
-        <div style="display: flex; align-items: center;">
+        <div class="header-left">
             <button class="menu-toggle" id="menu-toggle-btn">&#9776;</button>
-            <div class="logo">
-                <svg class="logo-svg" viewBox="0 0 220 60" xmlns="http://www.w3.org/2000/svg">
-                    <g id="bars">
-                        <rect y="0" width="60" height="10" fill="#BDBDBD"/>
-                        <rect y="12.5" width="60" height="10" fill="#8B0000"/>
-                        <rect y="25" width="60" height="10" fill="#4B0082"/>
-                        <rect y="37.5" width="60" height="10" fill="#9ACD32"/>
-                        <rect y="50" width="60" height="10" fill="#FF8C00"/>
-                    </g>
-                    <text x="75" y="45" font-family="Inter, sans-serif" font-size="40" font-weight="700" fill="var(--logo-color)" letter-spacing="-1">MVL</text>
-                </svg>
-            </div>
+            <a href="#" class="logo-link">
+                <div class="logo">
+                    <svg class="logo-svg" viewBox="0 0 220 60" xmlns="http://www.w3.org/2000/svg">
+                        <g id="bars">
+                            <rect y="0" width="60" height="10" fill="#BDBDBD"/>
+                            <rect y="12.5" width="60" height="10" fill="#8B0000"/>
+                            <rect y="25" width="60" height="10" fill="#4B0082"/>
+                            <rect y="37.5" width="60" height="10" fill="#9ACD32"/>
+                            <rect y="50" width="60" height="10" fill="#FF8C00"/>
+                        </g>
+                        <text x="75" y="45" font-family="Inter, sans-serif" font-size="40" font-weight="700" fill="var(--logo-color)" letter-spacing="-1">MVL</text>
+                    </svg>
+                </div>
+            </a>
+            <h1 class="page-title">MVL CMMC Level 1 Assessment Guidelines</h1>
         </div>
-        <div class="theme-switch-wrapper">
-            <label class="theme-switch" for="theme-toggle">
-                <input type="checkbox" id="theme-toggle">
-                <span class="slider"></span>
-            </label>
+        <div class="header-actions">
+            <button class="header-button" id="glossary-btn">Glossary</button>
+            <div class="theme-switch-wrapper">
+                <label class="theme-switch" for="theme-toggle">
+                    <input type="checkbox" id="theme-toggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
         </div>
     </header>
 
     <div class="container">
         <nav class="sidebar" id="sidebar-nav">
+            <h3 class="sidebar-heading">CMMC Level 1 Controls</h3>
             <ul class="sidebar-nav-list" id="sidebar-nav-list">
                 <!-- Nav groups will be inserted here -->
             </ul>
         </nav>
 
         <main class="main-content" id="main-content">
+             <section class="main-controls">
+                <div class="filter-group">
+                    <select id="domain-filter">
+                        <option value="all">All Domains</option>
+                    </select>
+                    <select id="status-filter">
+                        <option value="all">All Statuses</option>
+                    </select>
+                </div>
+                <div class="export-group">
+                    <button class="header-button" id="export-pdf-btn">Export to PDF</button>
+                    <button class="header-button" id="export-csv-btn">Export to CSV</button>
+                </div>
+            </section>
             <section class="compliance-overview">
                 <h2>Compliance Overview</h2>
                 <div class="dashboard-content">
@@ -364,258 +516,258 @@
             // ACCESS CONTROL (AC) - 4 Controls
             {
                 id: 'AC_L1-3_1_1', family: 'Access Control', title: 'AC.L1-3.1.1 - Authorized Access Control',
-                description: 'Limit system access to authorized users, processes acting on behalf of authorized users, and devices (including other systems).',
+                description: 'Limit system access to authorized users, processes acting on behalf of authorized users, and devices (including other systems). Scope: CMMC Level 1 for FCI.',
                 what_to_do: 'You must ensure that only approved individuals, computers, and software can access your company’s network and data. This means creating a clear "guest list" for your digital environment and strictly enforcing it.',
                 how_to_do: `<h4>Leveraging MVL Group's Technology Stack:</h4><ul><li><strong>Microsoft 365 G5 (Azure AD):</strong> Create unique user accounts for every employee. Do not use shared accounts.</li><li><strong>Microsoft Endpoint Manager (Intune):</strong> Register all company devices (laptops, phones) to create an inventory of trusted hardware.</li><li><strong>Azure AD Conditional Access:</strong> Create policies that only allow access from registered (compliant) devices and trusted locations.</li><li><strong>Zscaler Private Access (ZPA):</strong> Ensure remote users can only access specific internal applications after authentication and device verification.</li><li><strong>Actimo LMS:</strong> Deploy training on the importance of not sharing credentials.</li></ul>`,
                 checklist: `<ul><li>Maintain a current list of all authorized users.</li><li>Keep an inventory of all authorized devices.</li><li>Verify that access controls deny unauthorized connection attempts.</li><li>Disable accounts and remove device access immediately upon employee termination.</li><li>Formalize rules in an official Access Control Policy document.</li></ul>`,
                 process_steps: [
-                    { type: 'assess', text: 'Define & Document who is authorized (users, devices, processes).' },
-                    { type: 'implement', text: 'Configure access controls in Azure AD, Intune, and Zscaler.' },
-                    { type: 'monitor', text: 'Regularly audit user accounts and device compliance lists.' },
-                    { type: 'respond', text: 'Disable/remove access for unauthorized entities immediately upon discovery.' },
-                    { type: 'improve', text: 'Review and update the Access Control policy annually or as needed.' }
+                    { type: 'assess', text: 'Define & Document who is authorized (users, devices, processes).', tooltip: 'Identify all individuals and systems that require access and for what purpose. This forms the basis of your access control policy.' },
+                    { type: 'implement', text: 'Configure access controls in Azure AD, Intune, and Zscaler.', tooltip: 'Translate the policy into technical rules, creating user accounts, enrolling devices, and setting up conditional access policies.' },
+                    { type: 'monitor', text: 'Regularly audit user accounts and device compliance lists.', tooltip: 'Periodically check that only authorized entities have access and that all configurations remain correct.' },
+                    { type: 'respond', text: 'Disable/remove access for unauthorized entities immediately upon discovery.', tooltip: 'When an employee leaves or a device is lost, access must be revoked promptly to prevent misuse.' },
+                    { type: 'improve', text: 'Review and update the Access Control policy annually or as needed.', tooltip: 'Continuously refine your access policies based on audit findings, new threats, and changing business needs.' }
                 ],
-                official_guidance: `<h3>NIST SP 800-171 R3 - 3.1.1</h3><p>Limits information system access to authorized users, processes acting on behalf of authorized users, or devices (including other information systems).</p><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/800-171r3/NIST.SP.800-171r3.html#d30e734-Head3" target="_blank">View Full Document</a>`
+                official_guidance: `<h3>NIST SP 800-171 R3 - 3.1.1</h3><p>Identify users, processes acting on behalf of users, and devices; and authenticate (or verify) the identities of those users, processes, and devices as a prerequisite to allowing access to organizational systems.</p><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/800-171r3/NIST.SP.800-171r3.html#d30e734-Head3" target="_blank">View Full Document</a>`
             },
             {
                 id: 'AC_L1-3_1_2', family: 'Access Control', title: 'AC.L1-3.1.2 - Transaction & Function Control',
-                description: 'Limit information system access to the types of transactions and functions that authorized users are permitted to execute.',
+                description: 'Limit information system access to the types of transactions and functions that authorized users are permitted to execute. Scope: CMMC Level 1 for FCI.',
                 what_to_do: 'Enforce "least privilege." This means users should only be able to perform actions and access data that is absolutely necessary for their job roles.',
                 how_to_do: `<h4>Leveraging MVL Group's Technology Stack:</h4><ul><li><strong>Microsoft 365 G5 (Azure AD):</strong> Utilize Role-Based Access Control (RBAC). Assign users to predefined roles.</li><li><strong>SharePoint Online / Teams:</strong> Configure permissions at the site, library, and folder level.</li><li><strong>Zscaler Private Access (ZPA):</strong> Create granular access policies that define which user groups can access which internal applications.</li></ul>`,
                 checklist: `<ul><li>Document all user roles and their specific, permitted functions.</li><li>Assign all users to a defined role.</li><li>Limit administrator privileges to only essential IT personnel.</li><li>Regularly test permissions by attempting to perform an unauthorized action.</li></ul>`,
                 process_steps: [
-                    { type: 'assess', text: 'Define user roles and document the specific functions each role can perform.' },
-                    { type: 'implement', text: 'Apply these roles using Azure AD RBAC and SharePoint permissions.' },
-                    { type: 'monitor', text: 'Periodically audit role assignments to ensure no privilege creep has occurred.' },
-                    { type: 'respond', text: 'Correct any excessive permissions found during audits.' },
-                    { type: 'improve', text: 'Refine roles as job duties change to maintain least privilege.' }
+                    { type: 'assess', text: 'Define user roles and document the specific functions each role can perform.', tooltip: 'Analyze job responsibilities to determine the minimum necessary permissions for each role in the organization.' },
+                    { type: 'implement', text: 'Apply these roles using Azure AD RBAC and SharePoint permissions.', tooltip: 'Configure technical controls that enforce the defined roles, ensuring users cannot perform unauthorized actions.' },
+                    { type: 'monitor', text: 'Periodically audit role assignments to ensure no privilege creep has occurred.', tooltip: 'Regularly review user permissions to ensure they haven\'t accumulated unnecessary rights over time.' },
+                    { type: 'respond', text: 'Correct any excessive permissions found during audits.', tooltip: 'If a user has more access than their role requires, promptly reduce their permissions to the correct level.' },
+                    { type: 'improve', text: 'Refine roles as job duties change to maintain least privilege.', tooltip: 'Update role definitions and permissions as employees change roles or the organization evolves.' }
                 ],
-                official_guidance: `<h3>NIST SP 800-171 R3 - 3.1.2</h3><p>Limits information system access to the types of transactions and functions that authorized users are permitted to execute.</p><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/800-171r3/NIST.SP.800-171r3.html#d30e924-Head3" target="_blank">View Full Document</a>`
+                official_guidance: `<h3>NIST SP 800-171 R3 - 3.1.2</h3><p>Limit information system access to authorized users and the functions and transactions that authorized users are permitted to execute.</p><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/800-171r3/NIST.SP.800-171r3.html#d30e924-Head3" target="_blank">View Full Document</a>`
             },
             {
                 id: 'AC_L1-3_1_20', family: 'Access Control', title: 'AC.L1-3.1.20 - External Connections',
-                description: 'Verify and control/limit connections to and use of external information systems.',
+                description: 'Verify and control/limit connections to and use of external information systems. Scope: CMMC Level 1 for FCI.',
                 what_to_do: 'Manage how employees use external systems (e.g., personal devices, third-party cloud services) to prevent data exposure.',
                 how_to_do: `<h4>Leveraging MVL Group's Technology Stack:</h4><ul><li><strong>Azure AD Conditional Access:</strong> Block logins from unmanaged (personal) devices.</li><li><strong>Zscaler:</strong> Enforce web usage policies to block unauthorized cloud storage.</li><li><strong>Actimo LMS:</strong> Train users on approved vs. unapproved external tools.</li></ul>`,
                 checklist: `<ul><li>Identify all scenarios where data might go to an external system.</li><li>Enforce use of trusted devices and locations for access.</li><li>Require management approval for permitted external system use.</li><li>Verify data is not stored on unauthorized cloud services.</li></ul>`,
                  process_steps: [
-                    { type: 'assess', text: 'Identify and document all necessary external systems and cloud services.' },
-                    { type: 'implement', text: 'Configure Zscaler to block unapproved services and Azure AD to block unmanaged devices.' },
-                    { type: 'monitor', text: 'Review Zscaler logs for attempts to access blocked services.' },
-                    { type: 'respond', text: 'Investigate and address policy violations when they occur.' },
-                    { type: 'improve', text: 'Update the list of approved/blocked external services as business needs evolve.' }
+                    { type: 'assess', text: 'Identify and document all necessary external systems and cloud services.', tooltip: 'Create an inventory of all third-party services and personal device use cases for business operations.' },
+                    { type: 'implement', text: 'Configure Zscaler to block unapproved services and Azure AD to block unmanaged devices.', tooltip: 'Use technical controls to enforce policies regarding which external systems are permitted.' },
+                    { type: 'monitor', text: 'Review Zscaler logs for attempts to access blocked services.', tooltip: 'Regularly check for and analyze violations of the external systems policy.' },
+                    { type: 'respond', text: 'Investigate and address policy violations when they occur.', tooltip: 'Follow up on blocked access attempts to understand the business need and reinforce policy.' },
+                    { type: 'improve', text: 'Update the list of approved/blocked external services as business needs evolve.', tooltip: 'Maintain the relevance of the policy by periodically reviewing the list of allowed and disallowed services.' }
                 ],
-                official_guidance: `<h3>NIST SP 800-171 R3 - 3.1.20</h3><p>Verifies and controls/limits connections to and use of external information systems.</p><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/800-171r3/NIST.SP.800-171r3.html#d30e1563-Head3" target="_blank">View Full Document</a>`
+                official_guidance: `<h3>NIST SP 800-171 R3 - 3.1.3</h3><p>Control connections to and from external systems.</p><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/800-171r3/NIST.SP.800-171r3.html#d30e1563-Head3" target="_blank">View Full Document</a>`
             },
             {
                 id: 'AC_L1-3_1_22', family: 'Access Control', title: 'AC.L1-3.1.22 - Control Public Information',
-                description: 'Control information posted or processed on publicly accessible information systems.',
+                description: 'Control information posted or processed on publicly accessible information systems. Scope: CMMC Level 1 for FCI.',
                 what_to_do: 'Prevent sensitive Federal Contract Information (FCI) from being posted on public websites. Only authorized individuals should be able to post publicly, with a review process in place.',
                 how_to_do: `<h4>Leveraging MVL Group's Technology Stack:</h4><ul><li><strong>Azure AD PIM:</strong> Strictly control who can publish content.</li><li><strong>SharePoint/Power Automate:</strong> Implement a content approval workflow.</li><li><strong>Microsoft Purview (DLP):</strong> Detect and block attempts to upload sensitive data.</li><li><strong>Actimo LMS:</strong> Train employees on what is considered FCI.</li></ul>`,
                 checklist: `<ul><li>Maintain a list of personnel authorized to post on public systems.</li><li>Establish procedures for content review and approval.</li><li>Periodically review existing public content.</li><li>Verify public systems are isolated from internal data.</li></ul>`,
                  process_steps: [
-                    { type: 'assess', text: 'Define what constitutes public information vs. FCI and document who is authorized to post.' },
-                    { type: 'implement', text: 'Set up an approval workflow and a DLP policy to scan for FCI in outbound traffic.' },
-                    { type: 'monitor', text: 'Audit public-facing websites and DLP logs for potential FCI exposure.' },
-                    { type: 'respond', text: 'Immediately remove any identified FCI from public systems.' },
-                    { type: 'improve', text: 'Refine DLP rules and approval workflows based on audit findings.' }
+                    { type: 'assess', text: 'Define what constitutes public information vs. FCI and document who is authorized to post.', tooltip: 'Clearly establish data classification guidelines and assign responsibility for public communications.' },
+                    { type: 'implement', text: 'Set up an approval workflow and a DLP policy to scan for FCI in outbound traffic.', tooltip: 'Use technical controls to ensure a human review happens and to automatically block accidental leaks of FCI.' },
+                    { type: 'monitor', text: 'Audit public-facing websites and DLP logs for potential FCI exposure.', tooltip: 'Proactively search for sensitive information that may have been inadvertently posted.' },
+                    { type: 'respond', text: 'Immediately remove any identified FCI from public systems.', tooltip: 'Take swift action to contain any data spill and investigate the root cause.' },
+                    { type: 'improve', text: 'Refine DLP rules and approval workflows based on audit findings.', tooltip: 'Use lessons learned from monitoring and incidents to make controls more effective.' }
                 ],
-                official_guidance: `<h3>NIST SP 800-171 R3 - 3.1.22</h3><p>Controls information posted or processed on publicly accessible information systems.</p><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/800-171r3/NIST.SP.800-171r3.html#d30e1636-Head3" target="_blank">View Full Document</a>`
+                official_guidance: `<h3>NIST SP 800-171 R3 - 3.1.4</h3><p>Control information posted or processed on publicly accessible systems.</p><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/800-171r3/NIST.SP.800-171r3.html#d30e1636-Head3" target="_blank">View Full Document</a>`
             },
             {
                 id: 'IA_L1-3_5_1', family: 'Identification & Authentication', title: 'IA.L1-3.5.1 - Identification',
-                description: 'Identify system users, processes acting on behalf of users, and devices.',
+                description: 'Identify system users, processes acting on behalf of users, and devices. Scope: CMMC Level 1 for FCI.',
                 what_to_do: 'Uniquely identify every user, process, and device. This means no shared accounts, clear assignment of user IDs, and an inventory of authorized devices.',
                 how_to_do: `<h4>Leveraging MVL Group's Technology Stack:</h4><ul><li><strong>Azure AD:</strong> Provision unique user IDs for all staff.</li><li><strong>Intune:</strong> Automatically registers and assigns a unique device ID to all managed endpoints.</li><li><strong>Zscaler:</strong> Integrates with Azure AD SSO for network access identification.</li><li><strong>Actimo LMS:</strong> Reinforce the policy of "no shared accounts" through training.</li></ul>`,
                 checklist: `<ul><li>Ensure a one-to-one relationship between individuals and user accounts.</li><li>Document all service accounts and their owners.</li><li>Maintain a list of authorized devices with unique identifiers.</li><li>Verify identification extends to network devices.</li></ul>`,
                 process_steps: [
-                    { type: 'assess', text: 'Establish policies for unique identification for all users, devices, and service accounts.' },
-                    { type: 'implement', text: 'Provision unique IDs in Azure AD and enroll devices in Intune.' },
-                    { type: 'monitor', text: 'Regularly audit for shared or orphaned accounts and unregistered devices.' },
-                    { type: 'respond', text: 'Disable shared accounts and enforce enrollment for non-compliant devices.' },
-                    { type: 'improve', text: 'Automate the user/device lifecycle process from onboarding to offboarding.' }
+                    { type: 'assess', text: 'Establish policies for unique identification for all users, devices, and service accounts.', tooltip: 'Create a clear rule that every entity accessing the network must have a unique identifier.' },
+                    { type: 'implement', text: 'Provision unique IDs in Azure AD and enroll devices in Intune.', tooltip: 'Use identity and device management systems to create and manage unique identifiers.' },
+                    { type: 'monitor', text: 'Regularly audit for shared or orphaned accounts and unregistered devices.', tooltip: 'Proactively look for accounts not tied to a current employee or devices accessing resources without being managed.' },
+                    { type: 'respond', text: 'Disable shared accounts and enforce enrollment for non-compliant devices.', tooltip: 'Take corrective action to eliminate identification risks when they are found.' },
+                    { type: 'improve', text: 'Automate the user/device lifecycle process from onboarding to offboarding.', tooltip: 'Link HR processes with IT systems to ensure IDs are created and removed in a timely and automated fashion.' }
                 ],
-                official_guidance: `<h3>NIST SP 800-171 R3 - 3.5.1</h3><p>Identifies information system users, processes acting on behalf of users, or devices.</p><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/800-171r3/NIST.SP.800-171r3.html#d30e2620-Head3" target="_blank">View Full Document</a>`
+                official_guidance: `<h3>NIST SP 800-171 R3 - 3.5.1</h3><p>This requirement is integrated into AC.L1-3.1.1 in NIST SP 800-171 Rev. 3.</p><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/800-171r3/NIST.SP.800-171r3.html#d30e2620-Head3" target="_blank">View Full Document</a>`
             },
             {
                 id: 'IA_L1-3_5_2', family: 'Identification & Authentication', title: 'IA.L1-3.5.2 - Authentication',
-                description: 'Authenticate (or verify) the identities of those users, processes, or devices, as a prerequisite to allowing access to organizational information systems.',
+                description: 'Authenticate (or verify) the identities of those users, processes, or devices, as a prerequisite to allowing access to organizational information systems. Scope: CMMC Level 1 for FCI.',
                 what_to_do: 'Verify all identities before granting access. Having an ID isn’t enough; each user must prove it is who it claims to be using passwords and Multi-Factor Authentication (MFA).',
                 how_to_do: `<h4>Leveraging MVL Group's Technology Stack:</h4><ul><li><strong>Azure AD:</strong> Enforce Multi-Factor Authentication (MFA) for all user logins via Conditional Access.</li><li><strong>Zscaler:</strong> Integrates with Azure AD to enforce MFA before network access.</li><li><strong>Acronis:</strong> Integrate account access with Azure AD for authenticated backup access.</li><li><strong>Actimo:</strong> Educate users on MFA importance and credential safety.</li></ul>`,
                 checklist: `<ul><li>MFA is enabled and enforced for all user accounts.</li><li>Password policies meet complexity and length standards.</li><li>Device authentication is required for corporate resource access.</li><li>Service account credentials are secured and rotated.</li><li>Legacy authentication protocols are disabled.</li></ul>`,
                 process_steps: [
-                    { type: 'assess', text: 'Define strong authentication requirements, including mandatory MFA.' },
-                    { type: 'implement', text: 'Enforce MFA for all users via Azure AD Conditional Access policies.' },
-                    { type: 'monitor', text: 'Review Azure AD sign-in logs for legacy authentication attempts or MFA failures.' },
-                    { type: 'respond', text: 'Block legacy authentication and assist users with MFA enrollment issues.' },
-                    { type: 'improve', text: 'Explore and pilot passwordless authentication methods for higher security.' }
+                    { type: 'assess', text: 'Define strong authentication requirements, including mandatory MFA.', tooltip: 'Establish a clear policy that single-factor authentication is insufficient for accessing company resources.' },
+                    { type: 'implement', text: 'Enforce MFA for all users via Azure AD Conditional Access policies.', tooltip: 'Configure the identity system to technically require a second factor for every login.' },
+                    { type: 'monitor', text: 'Review Azure AD sign-in logs for legacy authentication attempts or MFA failures.', tooltip: 'Actively look for weaknesses or attempts to bypass stronger authentication controls.' },
+                    { type: 'respond', text: 'Block legacy authentication and assist users with MFA enrollment issues.', tooltip: 'Disable older, less secure protocols and provide support for users adopting MFA.' },
+                    { type: 'improve', text: 'Explore and pilot passwordless authentication methods for higher security.', tooltip: 'Continuously look for ways to improve security and user experience, such as biometrics or FIDO2 keys.' }
                 ],
-                official_guidance: `<h3>NIST SP 800-171 R3 - 3.5.2</h3><p>Authenticates (or verifies) the identities of users, processes, or devices as a prerequisite to allowing access to organizational systems.</p><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/800-171r3/NIST.SP.800-171r3.html#d30e2659-Head3" target="_blank">View Full Document</a>`
+                official_guidance: `<h3>NIST SP 800-171 R3 - 3.5.1</h3><p>This requirement is integrated into AC.L1-3.1.1 in NIST SP 800-171 Rev. 3.</p><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/800-171r3/NIST.SP.800-171r3.html#d30e2659-Head3" target="_blank">View Full Document</a>`
             },
             {
                 id: 'MP_L1-3_8_3', family: 'Media Protection', title: 'MP.L1-3.8.3 - Media Disposal',
-                description: 'Sanitize or destroy information system media containing Federal Contract Information before disposal or release for reuse.',
+                description: 'Sanitize or destroy information system media containing Federal Contract Information before disposal or release for reuse. Scope: CMMC Level 1 for FCI.',
                 what_to_do: 'Properly wipe or destroy any storage media (hard drives, USB sticks, paper files) that contained FCI before getting rid of it, ensuring data is irretrievable.',
                 how_to_do: `<h4>Leveraging MVL Group's Technology Stack:</h4><ul><li><strong>BitLocker (Microsoft 365):</strong> Encrypt all hard drives. Deleting the key upon decommission renders data unreadable.</li><li><strong>Acronis Backup:</strong> Back up necessary data before wiping a device.</li><li><strong>Third-Party Disposal Service:</strong> Engage a certified vendor for physical destruction of media.</li><li><strong>Actimo LMS:</strong> Train staff on proper disposal procedures.</li></ul>`,
                 checklist: `<ul><li>All media are identified before disposal.</li><li>Media containing FCI is sanitized (wiped) or destroyed (shredded).</li><li>A certificate of destruction is obtained for destroyed media.</li><li>Ensure data is backed up before device disposal.</li></ul>`,
                 process_steps: [
-                    { type: 'assess', text: 'Create an inventory of all media types that could contain FCI (drives, tapes, paper).' },
-                    { type: 'implement', text: 'Establish a formal process for media disposal, including backup, sanitization, and destruction.' },
-                    { type: 'monitor', text: 'Track all media disposals and maintain certificates of destruction from vendors.' },
-                    { type: 'respond', text: 'Investigate any instances of improper media disposal.' },
-                    { type: 'improve', text: 'Periodically review and update the disposal policy and procedures.' }
+                    { type: 'assess', text: 'Create an inventory of all media types that could contain FCI (drives, tapes, paper).', tooltip: 'Understand where FCI might be stored so you can manage its entire lifecycle, including disposal.' },
+                    { type: 'implement', text: 'Establish a formal process for media disposal, including backup, sanitization, and destruction.', tooltip: 'Define the exact steps IT must follow when a device or media is retired from service.' },
+                    { type: 'monitor', text: 'Track all media disposals and maintain certificates of destruction from vendors.', tooltip: 'Keep a paper trail to prove that media containing FCI was destroyed in a compliant manner.' },
+                    { type: 'respond', text: 'Investigate any instances of improper media disposal.', tooltip: 'If a device is disposed of incorrectly, find out what happened and why to prevent recurrence.' },
+                    { type: 'improve', text: 'Periodically review and update the disposal policy and procedures.', tooltip: 'Ensure your disposal methods keep up with technology changes and best practices.' }
                 ],
-                official_guidance: `<h3>NIST SP 800-171 R3 - 3.8.3</h3><p>Sanitizes or destroys information system media containing Federal Contract Information before disposal or release for reuse.</p><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/800-171r3/NIST.SP.800-171r3.html#d30e3451-Head3" target="_blank">View Full Document</a>`
+                official_guidance: `<h3>NIST SP 800-171 R3 - 3.8.1</h3><p>Protect system media containing CUI, including digital and non-digital media; and limit access to CUI on system media to authorized users.</p><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/800-171r3/NIST.SP.800-171r3.html#d30e3451-Head3" target="_blank">View Full Document</a>`
             },
             {
                 id: 'PE_L1-3_10_1', family: 'Physical Protection', title: 'PE.L1-3.10.1 - Limit Physical Access',
-                description: 'Limit physical access to organizational information systems, equipment, and the respective operating environments to authorized individuals.',
+                description: 'Limit physical access to organizational information systems, equipment, and the respective operating environments to authorized individuals. Scope: CMMC Level 1 for FCI.',
                 what_to_do: 'Ensure only authorized people can get near company computers, servers, and networking equipment by securing offices and server rooms.',
                 how_to_do: `<h4>Implementation (Largely non-technical):</h4><ul><li><strong>Physical Security:</strong> Use electronic badge systems or lock-and-key for offices and server rooms.</li><li><strong>Access Lists:</strong> Maintain a list of personnel authorized for each secure area.</li><li><strong>Actimo LMS:</strong> Train employees on physical security policies like not "tailgating".</li></ul>`,
                 checklist: `<ul><li>Identify all areas housing FCI or critical systems.</li><li>Restrict access to those areas with physical controls.</li><li>Maintain and review a list of authorized personnel.</li><li>Revoke physical access upon employee departure.</li></ul>`,
                  process_steps: [
-                    { type: 'assess', text: 'Identify and map all sensitive areas requiring physical access control.' },
-                    { type: 'implement', text: 'Install and configure locks or badge readers for all identified areas.' },
-                    { type: 'monitor', text: 'Review physical access logs for unauthorized entry attempts.' },
-                    { type: 'respond', text: 'Investigate tailgating or forced entry events.' },
-                    { type: 'improve', text: 'Periodically audit access lists and remove unneeded permissions.' }
+                    { type: 'assess', text: 'Identify and map all sensitive areas requiring physical access control.', tooltip: 'Walk through your facilities to locate all server closets, network rooms, and areas where FCI is stored or processed.' },
+                    { type: 'implement', text: 'Install and configure locks or badge readers for all identified areas.', tooltip: 'Put physical barriers in place to prevent unauthorized entry.' },
+                    { type: 'monitor', text: 'Review physical access logs for unauthorized entry attempts.', tooltip: 'Check badge swipe logs or sign-in sheets to see if anyone has tried to enter a restricted area without permission.' },
+                    { type: 'respond', text: 'Investigate tailgating or forced entry events.', tooltip: 'If someone bypasses a physical control, determine how it happened and who was involved.' },
+                    { type: 'improve', text: 'Periodically audit access lists and remove unneeded permissions.', tooltip: 'Ensure that only current employees with a valid business need have physical access to sensitive areas.' }
                 ],
-                official_guidance: `<h3>NIST SP 800-171 R3 - 3.10.1</h3><p>Limits physical access to organizational information systems, equipment, and the respective operating environments to authorized individuals.</p><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/800-171r3/NIST.SP.800-171r3.html#d30e3757-Head3" target="_blank">View Full Document</a>`
+                official_guidance: `<h3>NIST SP 800-171 R3 - 3.10.1</h3><p>Limit physical access to systems, equipment, and operating environments to authorized individuals.</p><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/800-171r3/NIST.SP.800-171r3.html#d30e3757-Head3" target="_blank">View Full Document</a>`
             },
             {
                 id: 'PE_L1-3_10_3', family: 'Physical Protection', title: 'PE.L1-3.10.3 - Escort Visitors',
-                description: 'Escort visitors and monitor visitor activity.',
+                description: 'Escort visitors and monitor visitor activity. Scope: CMMC Level 1 for FCI.',
                 what_to_do: 'Visitors must not be left alone in areas with access to MVL systems. They should be signed in, given badges, and accompanied by an employee.',
                 how_to_do: `<h4>Implementation:</h4><ul><li><strong>Visitor Management:</strong> Establish a visitor procedure requiring sign-in, host identification, and visitor badges.</li><li><strong>Escort Policy:</strong> Instruct employees via Actimo that visitors must be escorted in non-public areas.</li><li><strong>Monitoring:</strong> Use security cameras if available; train staff to challenge unescorted individuals.</li></ul>`,
                 checklist: `<ul><li>Visitors are logged upon entry.</li><li>Visitor badges are issued.</li><li>Policy requires an escort for visitors in sensitive areas.</li><li>Visitor activities are monitored.</li></ul>`,
                 process_steps: [
-                    { type: 'assess', text: 'Create a formal visitor policy that mandates sign-in, badging, and escorts.' },
-                    { type: 'implement', text: 'Set up a visitor log at reception and provide distinct visitor badges.' },
-                    { type: 'monitor', text: 'Reception and employees monitor for unescorted or unbadged individuals.' },
-                    { type: 'respond', text: 'Politely challenge any unescorted visitors and locate their host.' },
-                    { type: 'improve', text: 'Provide refresher training to all employees on the visitor and escort policy.' }
+                    { type: 'assess', text: 'Create a formal visitor policy that mandates sign-in, badging, and escorts.', tooltip: 'Document the exact procedure for handling any non-employee who enters the facility.' },
+                    { type: 'implement', text: 'Set up a visitor log at reception and provide distinct visitor badges.', tooltip: 'Put the tools and materials in place to execute the visitor policy.' },
+                    { type: 'monitor', text: 'Reception and employees monitor for unescorted or unbadged individuals.', tooltip: 'Maintain situational awareness to spot anyone who is not following the visitor policy.' },
+                    { type: 'respond', text: 'Politely challenge any unescorted visitors and locate their host.', tooltip: 'Take immediate action to correct a policy violation and ensure the visitor is properly escorted.' },
+                    { type: 'improve', text: 'Provide refresher training to all employees on the visitor and escort policy.', tooltip: 'Regularly remind staff of their responsibilities regarding physical security and visitors.' }
                 ],
-                official_guidance: `<h3>NIST SP 800-171 R3 - 3.10.3</h3><p>Escorts visitors and monitors visitor activity.</p><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/800-171r3/NIST.SP.800-171r3.html#d30e3836-Head3" target="_blank">View Full Document</a>`
+                official_guidance: `<h3>NIST SP 800-171 R3 - 3.10.1</h3><p>This requirement is integrated into PE.L1-3.10.1 in NIST SP 800-171 Rev. 3.</p><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/800-171r3/NIST.SP.800-171r3.html#d30e3836-Head3" target="_blank">View Full Document</a>`
             },
             {
                 id: 'PE_L1-3_10_4', family: 'Physical Protection', title: 'PE.L1-3.10.4 - Physical Access Logs',
-                description: 'Maintain audit logs of physical access.',
+                description: 'Maintain audit logs of physical access. Scope: CMMC Level 1 for FCI.',
                 what_to_do: 'Record entries and exits to sensitive facilities to have a traceable record of who was in secure areas and when.',
                 how_to_do: `<h4>Implementation:</h4><ul><li><strong>Electronic Systems:</strong> Use logging from badge entry systems.</li><li><strong>Manual Logs:</strong> Maintain sign-in/out sheets for visitors and after-hours access.</li><li><strong>Log Storage:</strong> Ensure logs are safely stored and protected.</li><li><strong>Actimo LMS:</strong> Remind staff to not bypass logging procedures.</li></ul>`,
                 checklist: `<ul><li>Electronic access logs are enabled and retained.</li><li>Visitor log records are complete and kept for all guests.</li><li>Logs include sufficient detail to identify individuals.</li><li>Logs are secured and periodically reviewed.</li></ul>`,
                  process_steps: [
-                    { type: 'assess', text: 'Determine which areas require physical access logging.' },
-                    { type: 'implement', text: 'Enable electronic logging on badge systems and implement manual visitor logs.' },
-                    { type: 'monitor', text: 'Ensure logs are being captured completely and are stored securely.' },
-                    { type: 'respond', text: 'Review logs periodically for suspicious activity or patterns.' },
-                    { type: 'improve', text: 'Adjust log retention periods based on security requirements.' }
+                    { type: 'assess', text: 'Determine which areas require physical access logging.', tooltip: 'Identify every door and entry point that leads to a sensitive area.' },
+                    { type: 'implement', text: 'Enable electronic logging on badge systems and implement manual visitor logs.', tooltip: 'Turn on the features that record access or put the physical logbooks in place.' },
+                    { type: 'monitor', text: 'Ensure logs are being captured completely and are stored securely.', tooltip: 'Check that the systems are working and that logs are not being tampered with or deleted prematurely.' },
+                    { type: 'respond', text: 'Review logs periodically for suspicious activity or patterns.', tooltip: 'Actively look for red flags, such as access at odd hours or repeated failed attempts.' },
+                    { type: 'improve', text: 'Adjust log retention periods based on security requirements.', tooltip: 'Ensure logs are kept long enough to be useful for an investigation, but not indefinitely.' }
                 ],
-                official_guidance: `<h3>NIST SP 800-171 R3 - 3.10.4</h3><p>Maintains audit logs of physical access.</p><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/800-171r3/NIST.SP.800-171r3.html#d30e3846-Head3" target="_blank">View Full Document</a>`
+                official_guidance: `<h3>NIST SP 800-171 R3 - 3.10.1</h3><p>This requirement is integrated into PE.L1-3.10.1 in NIST SP 800-171 Rev. 3.</p><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/800-171r3/NIST.SP.800-171r3.html#d30e3846-Head3" target="_blank">View Full Document</a>`
             },
             {
                 id: 'PE_L1-3_10_5', family: 'Physical Protection', title: 'PE.L1-3.10.5 - Manage Physical Access Devices',
-                description: 'Control and manage physical access devices.',
+                description: 'Control and manage physical access devices. Scope: CMMC Level 1 for FCI.',
                 what_to_do: 'Carefully issue, track, and retrieve physical access devices like keys and access cards. Change locks or codes if security is compromised.',
                 how_to_do: `<h4>Implementation:</h4><ul><li><strong>Inventory:</strong> Maintain a key and badge inventory.</li><li><strong>Badge Management System:</strong> Use to assign and deactivate cards.</li><li><strong>Key Control:</strong> Have a formal check-out/check-in process.</li><li><strong>Actimo LMS:</strong> Train staff to report lost devices immediately.</li></ul>`,
                 checklist: `<ul><li>Every key/card is accounted for and assigned.</li><li>A deactivation/return process is enforced for departures.</li><li>Spare keys/cards are secured.</li><li>Door codes are changed periodically.</li></ul>`,
                 process_steps: [
-                    { type: 'assess', text: 'Create and maintain a complete inventory of all keys, badges, and codes.' },
-                    { type: 'implement', text: 'Implement a formal check-in/check-out process for all physical access devices.' },
-                    { type: 'monitor', text: 'Audit the inventory against employee records regularly.' },
-                    { type: 'respond', text: 'Immediately deactivate and retrieve devices from departing employees, and change codes if compromised.' },
-                    { type: 'improve', text: 'Review and strengthen inventory management processes.' }
+                    { type: 'assess', text: 'Create and maintain a complete inventory of all keys, badges, and codes.', tooltip: 'Know exactly how many access devices exist and who has them at all times.' },
+                    { type: 'implement', text: 'Implement a formal check-in/check-out process for all physical access devices.', tooltip: 'Ensure there is a documented record every time an access device changes hands.' },
+                    { type: 'monitor', text: 'Audit the inventory against employee records regularly.', tooltip: 'Cross-reference the device log with HR records to find devices assigned to former employees.' },
+                    { type: 'respond', text: 'Immediately deactivate and retrieve devices from departing employees, and change codes if compromised.', tooltip: 'Take immediate action to prevent unauthorized use of lost, stolen, or unreturned access devices.' },
+                    { type: 'improve', text: 'Review and strengthen inventory management processes.', tooltip: 'Look for ways to make the tracking and retrieval of access devices more efficient and error-proof.' }
                 ],
-                official_guidance: `<h3>NIST SP 800-171 R3 - 3.10.5</h3><p>Controls and manages physical access devices.</p><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/800-171r3/NIST.SP.800-171r3.html#d30e3856-Head3" target="_blank">View Full Document</a>`
+                official_guidance: `<h3>NIST SP 800-171 R3 - 3.10.1</h3><p>This requirement is integrated into PE.L1-3.10.1 in NIST SP 800-171 Rev. 3.</p><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/800-171r3/NIST.SP.800-171r3.html#d30e3856-Head3" target="_blank">View Full Document</a>`
             },
             {
                 id: 'SC_L1-3_13_1', family: 'System & Communications Protection', title: 'SC.L1-3.13.1 - Boundary Protection',
-                description: 'Monitor, control, and protect communications at the external boundaries and key internal boundaries of the information systems.',
+                description: 'Monitor, control, and protect communications at the external boundaries and key internal boundaries of the information systems. Scope: CMMC Level 1 for FCI.',
                 what_to_do: 'Guard your network borders where they connect to the internet. Use firewalls and filters to inspect and restrict traffic.',
                 how_to_do: `<h4>Leveraging MVL Group's Technology Stack:</h4><ul><li><strong>Zscaler Internet Access (ZIA):</strong> Acts as a secure web gateway to inspect all internet traffic.</li><li><strong>Zscaler Private Access (ZPA):</strong> Implements a zero-trust model, hiding internal applications.</li><li><strong>Network Segmentation:</strong> Create separate network segments (e.g., guest Wi-Fi) isolated from the corporate network.</li></ul>`,
                 checklist: `<ul><li>A network diagram exists showing all connection points.</li><li>Firewall rules are configured to default-deny inbound traffic.</li><li>Internal boundary protections are implemented if needed.</li><li>Traffic monitoring logs are enabled and reviewed.</li></ul>`,
                 process_steps: [
-                    { type: 'assess', text: 'Map all network boundaries, including internet egress points and internal segments.' },
-                    { type: 'implement', text: 'Deploy Zscaler for all internet traffic and configure firewall rules to deny all traffic by default.' },
-                    { type: 'monitor', text: 'Actively review Zscaler traffic logs and firewall alerts for threats.' },
-                    { type: 'respond', text: 'Block malicious IP addresses or URLs identified during monitoring.' },
-                    { type: 'improve', text: 'Fine-tune firewall rules to be more restrictive based on observed traffic patterns.' }
+                    { type: 'assess', text: 'Map all network boundaries, including internet egress points and internal segments.', tooltip: 'Create a network diagram to visualize where your network connects to the outside world and where internal zones meet.' },
+                    { type: 'implement', text: 'Deploy Zscaler for all internet traffic and configure firewall rules to deny all traffic by default.', tooltip: 'Configure a "deny all, allow by exception" policy at the network edge.' },
+                    { type: 'monitor', text: 'Actively review Zscaler traffic logs and firewall alerts for threats.', tooltip: 'Look for anomalies, blocked connections, and indicators of compromise in your network traffic data.' },
+                    { type: 'respond', text: 'Block malicious IP addresses or URLs identified during monitoring.', tooltip: 'Update firewall and proxy rules to stop newly identified threats at the boundary.' },
+                    { type: 'improve', text: 'Fine-tune firewall rules to be more restrictive based on observed traffic patterns.', tooltip: 'If a service only needs one port, ensure all other ports are closed to it. Continuously shrink the attack surface.' }
                 ],
-                official_guidance: `<h3>NIST SP 800-171 R3 - 3.13.1</h3><p>Monitors, controls, and protects organizational communications at the external and key internal boundaries of the information systems.</p><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/800-171r3/NIST.SP.800-171r3.html#d30e4357-Head3" target="_blank">View Full Document</a>`
+                official_guidance: `<h3>NIST SP 800-171 R3 - 3.13.1</h3><p>Control traffic at external boundaries and at key internal boundaries of the system.</p><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/800-171r3/NIST.SP.800-171r3.html#d30e4357-Head3" target="_blank">View Full Document</a>`
             },
             {
                 id: 'SC_L1-3_13_5', family: 'System & Communications Protection', title: 'SC.L1-3.13.5 - Public System Separation',
-                description: 'Implement subnetworks for publicly accessible system components that are physically or logically separated from internal networks.',
+                description: 'Implement subnetworks for publicly accessible system components that are physically or logically separated from internal networks. Scope: CMMC Level 1 for FCI.',
                 what_to_do: 'If you have public systems (like a website), they must be isolated from your internal network to create a "DMZ".',
                 how_to_do: `<h4>Implementation:</h4><ul><li><strong>Network Architecture:</strong> Host public-facing services in a separate network segment (DMZ).</li><li><strong>Firewall Rules:</strong> Strictly control traffic between the DMZ and the internal network.</li><li><strong>Zscaler Private Access (ZPA):</strong> Inherently separates internal applications from the public internet.</li></ul>`,
                 checklist: `<ul><li>Identify all publicly accessible systems.</li><li>Confirm public components are on a separate network.</li><li>Firewall rules prevent direct access from the public zone to the internal network.</li><li>Test isolation via network scan.</li></ul>`,
                 process_steps: [
-                    { type: 'assess', text: 'Identify all publicly accessible systems (e.g., web servers).' },
-                    { type: 'implement', text: 'Place these systems in a separate, isolated network segment (DMZ).' },
-                    { type: 'monitor', text: 'Use a firewall to strictly control traffic between the DMZ and internal network.' },
-                    { type: 'respond', text: 'Run periodic penetration tests to validate the isolation.' },
-                    { type: 'improve', text: 'Ensure no new systems are deployed publicly without following this separation process.' }
+                    { type: 'assess', text: 'Identify all publicly accessible systems (e.g., web servers).', tooltip: 'Create a definitive list of all systems that are intentionally exposed to the internet.' },
+                    { type: 'implement', text: 'Place these systems in a separate, isolated network segment (DMZ).', tooltip: 'Use VLANs or cloud networking constructs to create a buffer zone between public systems and the internal network.' },
+                    { type: 'implement', text: 'Use a firewall to strictly control all traffic between the DMZ and internal network.', tooltip: 'Configure rules that explicitly deny all traffic unless it is specifically required and approved.' },
+                    { type: 'monitor', text: 'Run periodic penetration tests to validate the isolation.', tooltip: 'Actively try to breach the boundary from the DMZ to the internal network to confirm controls are working.' },
+                    { type: 'improve', text: 'Ensure no new systems are deployed publicly without following this separation process.', tooltip: 'Integrate the DMZ deployment process into your standard change management procedures.' }
                 ],
-                official_guidance: `<h3>NIST SP 800-171 R3 - 3.13.5</h3><p>Implements subnetworks for publicly-accessible system components that are physically or logically separated from internal networks.</p><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/800-171r3/NIST.SP.800-171r3.html#d30e4466-Head3" target="_blank">View Full Document</a>`
+                official_guidance: `<h3>NIST SP 800-171 R3 - 3.13.2</h3><p>Deny network communications traffic by default and allow network communications traffic by exception.</p><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/800-171r3/NIST.SP.800-171r3.html#d30e4466-Head3" target="_blank">View Full Document</a>`
             },
             {
                 id: 'SI_L1-3_14_1', family: 'System and Information Integrity', title: 'SI.L1-3.14.1 - Flaw Remediation',
-                description: 'Identify, report, and correct information and information system flaws in a timely manner.',
+                description: 'Identify, report, and correct information and information system flaws in a timely manner. Scope: CMMC Level 1 for FCI.',
                 what_to_do: 'Have a process to handle software and hardware vulnerabilities: find them (identify), track them (report), and fix them (patch) promptly.',
                 how_to_do: `<h4>Leveraging MVL Group's Technology Stack:</h4><ul><li><strong>Microsoft Defender Vulnerability Management:</strong> Scan for and identify missing patches.</li><li><strong>Intune/Windows Update for Business:</strong> Automatically deploy security patches.</li><li><strong>Acronis Backup:</strong> Ensure systems are backed up before major updates.</li><li><strong>Internal Ticketing System:</strong> Document and track internally reported flaws.</li></ul>`,
                 checklist: `<ul><li>Inventory all software and systems.</li><li>Apply critical security updates in a timely manner.</li><li>A process for internal flaw reporting exists.</li><li>Maintain evidence of patch management.</li></ul>`,
                 process_steps: [
-                    { type: 'assess', text: 'Continuously scan systems for vulnerabilities using Defender Vulnerability Management.' },
-                    { type: 'implement', text: 'Categorize flaws by severity and create a remediation plan.' },
-                    { type: 'implement', text: 'Deploy patches using Intune within the timeframes defined by policy.' },
-                    { type: 'monitor', text: 'Verify that patches were successfully installed and the vulnerability is resolved.' },
-                    { type: 'improve', text: 'Review patching metrics to shorten the time-to-remediate.' }
+                    { type: 'assess', text: 'Continuously scan systems for vulnerabilities using Defender Vulnerability Management.', tooltip: 'Proactively identify software flaws, missing patches, and misconfigurations across all assets.' },
+                    { type: 'implement', text: 'Categorize flaws by severity and create a remediation plan based on risk.', tooltip: 'Prioritize fixing the most critical vulnerabilities first.' },
+                    { type: 'implement', text: 'Deploy patches using Intune within the timeframes defined by policy.', tooltip: 'Use a centralized tool to push updates to systems in a controlled and timely manner.' },
+                    { type: 'monitor', text: 'Verify that patches were successfully installed and the vulnerability is resolved.', tooltip: 'Confirm that the fix was applied and the risk has been mitigated by re-scanning the system.' },
+                    { type: 'improve', text: 'Review patching metrics to shorten the time-to-remediate.', tooltip: 'Analyze how long it takes to patch critical flaws and find ways to improve the speed and efficiency of the process.' }
                 ],
-                official_guidance: `<h3>NIST SP 800-171 R3 - 3.14.1</h3><p>Identifies, reports, and corrects information and information system flaws in a timely manner.</p><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/800-171r3/NIST.SP.800-171r3.html#d30e4849-Head3" target="_blank">View Full Document</a>`
+                official_guidance: `<h3>NIST SP 800-171 R3 - 3.14.1</h3><p>Identify and correct system flaws in a timely manner.</p><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/800-171r3/NIST.SP.800-171r3.html#d30e4849-Head3" target="_blank">View Full Document</a>`
             },
             {
                 id: 'SI_L1-3_14_2', family: 'System and Information Integrity', title: 'SI.L1-3.14.2 - Malicious Code Protection',
-                description: 'Provide protection from malicious code at appropriate locations within organizational information systems.',
+                description: 'Provide protection from malicious code at appropriate locations within organizational information systems. Scope: CMMC Level 1 for FCI.',
                 what_to_do: 'Deploy anti-malware (antivirus) protections at key places: all computers, servers, email gateways, and web traffic filters.',
                 how_to_do: `<h4>Leveraging MVL Group's Technology Stack:</h4><ul><li><strong>Microsoft Defender for Endpoint:</strong> Deploy on all endpoints.</li><li><strong>Microsoft Defender for Office 365:</strong> Scan all email attachments and links.</li><li><strong>Zscaler Internet Access (ZIA):</strong> Provides malware inspection for all web traffic.</li><li><strong>Acronis:</strong> Use the anti-ransomware feature as a secondary protection layer.</li></ul>`,
                 checklist: `<ul><li>Anti-malware is installed and running on all endpoints.</li><li>Email and web traffic have malware filtering enabled.</li><li>Test effectiveness with a benign test file (EICAR).</li></ul>`,
                 process_steps: [
-                    { type: 'assess', text: 'Identify all entry points for malicious code (email, web, removable media).' },
-                    { type: 'implement', text: 'Deploy Defender on endpoints, Defender for Office 365 for email, and Zscaler for web.' },
-                    { type: 'monitor', text: 'Review security dashboards for malware detection alerts.' },
-                    { type: 'respond', text: 'Isolate any infected machine from the network immediately.' },
-                    { type: 'improve', text: 'Use detection data to improve user awareness training on phishing and malware.' }
+                    { type: 'assess', text: 'Identify all entry points for malicious code (email, web, removable media).', tooltip: 'Determine all the ways that malicious software could potentially enter your network.' },
+                    { type: 'implement', text: 'Deploy Defender on endpoints, Defender for Office 365 for email, and Zscaler for web.', tooltip: 'Use a layered defense strategy to protect all identified entry points.' },
+                    { type: 'monitor', text: 'Review security dashboards for malware detection alerts.', tooltip: 'Actively look for notifications from your security tools that a threat has been found.' },
+                    { type: 'respond', text: 'Isolate any infected machine from the network immediately.', tooltip: 'Prevent the malware from spreading to other systems by cutting off its network connection.' },
+                    { type: 'improve', text: 'Use detection data to improve user awareness training on phishing and malware.', tooltip: 'Analyze how malware is getting in and use that data to create targeted training for employees.' }
                 ],
-                official_guidance: `<h3>NIST SP 800-171 R3 - 3.14.2</h3><p>Provides protection from malicious code at appropriate locations within organizational information systems.</p><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/800-171r3/NIST.SP.800-171r3.html#d30e4893-Head3" target="_blank">View Full Document</a>`
+                official_guidance: `<h3>NIST SP 800-171 R3 - 3.14.2</h3><p>Provide protection from malicious code at appropriate locations within the system.</p><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/800-171r3/NIST.SP.800-171r3.html#d30e4893-Head3" target="_blank">View Full Document</a>`
             },
             {
                 id: 'SI_L1-3_14_4', family: 'System and Information Integrity', title: 'SI.L1-3.14.4 - Update Malicious Code Protection',
-                description: 'Update malicious code protection mechanisms when new releases are available.',
+                description: 'Update malicious code protection mechanisms when new releases are available. Scope: CMMC Level 1 for FCI.',
                 what_to_do: 'Keep your anti-malware tools up-to-date, including both the malware definition files (daily) and the software engine.',
                 how_to_do: `<h4>Leveraging MVL Group's Technology Stack:</h4><ul><li><strong>Microsoft Defender:</strong> Configure automatic definition updates via Intune policy.</li><li><strong>Intune/Windows Update:</strong> Push updates for the Defender engine.</li><li><strong>Zscaler:</strong> Cloud service updates automatically; keep client app updated.</li></ul>`,
                 checklist: `<ul><li>Signature updates are frequent (daily) and automatic.</li><li>Application/engine versions are current.</li><li>Monitor consoles to ensure no endpoints have old definitions.</li><li>Zscaler client is on the latest recommended version.</li></ul>`,
                 process_steps: [
-                    { type: 'assess', text: 'Establish a policy for automatic, daily updates of anti-malware definitions.' },
-                    { type: 'implement', text: 'Configure Intune and Defender policies to enforce automatic updates.' },
-                    { type: 'monitor', text: 'Use the Defender security portal to monitor the definition status of all devices.' },
-                    { type: 'respond', text: 'Troubleshoot and remediate any devices that fail to update.' },
-                    { type: 'improve', text: 'Ensure new devices are automatically enrolled in the update policy.' }
+                    { type: 'assess', text: 'Establish a policy for automatic, daily updates of anti-malware definitions.', tooltip: 'Create a rule that all anti-malware software must check for new signatures every day.' },
+                    { type: 'implement', text: 'Configure Intune and Defender policies to enforce automatic updates.', tooltip: 'Use your device management system to push the update policy to all computers.' },
+                    { type: 'monitor', text: 'Use the Defender security portal to monitor the definition status of all devices.', tooltip: 'Check a centralized dashboard to see if any devices are failing to update.' },
+                    { type: 'respond', text: 'Troubleshoot and remediate any devices that fail to update.', tooltip: 'Investigate why a device is not updating (e.g., offline, network issue) and resolve the problem.' },
+                    { type: 'improve', text: 'Ensure new devices are automatically enrolled in the update policy.', tooltip: 'Make sure your onboarding process for new computers includes applying the automatic update policy.' }
                 ],
-                official_guidance: `<h3>NIST SP 800-171 R3 - 3.14.4</h3><p>Updates malicious code protection mechanisms when new releases are available.</p><a href="https://csrc.nist.gov/pubs/sp/800/171/r2/upd1/final" target="_blank">View Full Document</a>`
+                official_guidance: `<h3>NIST SP 800-171 R3 - 3.14.2</h3><p>This requirement is integrated into SI.L1-3.14.2 in NIST SP 800-171 Rev. 3.</p><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/800-171r3/NIST.SP.800-171r3.html#d30e4989-Head3" target="_blank">View Full Document</a>`
             },
             {
                 id: 'SI_L1-3_14_5', family: 'System and Information Integrity', title: 'SI.L1-3.14.5 - System & File Scanning',
-                description: 'Perform periodic scans of the information system and real-time scans of files from external sources as files are downloaded, opened, or executed.',
+                description: 'Perform periodic scans of the information system and real-time scans of files from external sources as files are downloaded, opened, or executed. Scope: CMMC Level 1 for FCI.',
                 what_to_do: 'Anti-malware must run both real-time scans of all incoming files and regular, scheduled full-system scans.',
                 how_to_do: `<h4>Leveraging MVL Group's Technology Stack:</h4><ul><li><strong>Microsoft Defender for Endpoint:</strong> Enable "Real-time protection" and configure a weekly "Full Scan".</li><li><strong>Zscaler Internet Access (ZIA):</strong> Scans all web downloads in real-time.</li><li><strong>Microsoft Defender for Office 365:</strong> Automatically scans email attachments and links.</li><li><strong>Actimo:</strong> Educate users not to disable or postpone scans.</li></ul>`,
                 checklist: `<ul><li>A scheduled scan is defined and running on endpoints.</li><li>Real-time protection is enabled and cannot be disabled by users.</li><li>AV logs are reviewed for completion and detections.</li><li>No significant folders are excluded from scans without justification.</li></ul>`,
                 process_steps: [
-                    { type: 'assess', text: 'Define policies for both real-time and scheduled scanning across all systems.' },
-                    { type: 'implement', text: 'Configure Defender policies in Intune to enforce real-time and weekly full scans.' },
-                    { type: 'monitor', text: 'Review Defender logs to ensure scans are running and check for any malware detections.' },
-                    { type: 'respond', text: 'Remediate any malware found during scans.' },
-                    { type: 'improve', text: 'Adjust scan schedules based on system performance and risk.' }
+                    { type: 'assess', text: 'Define policies for both real-time and scheduled scanning across all systems.', tooltip: 'Create a written policy stating that all systems must have real-time protection and run regular full scans.' },
+                    { type: 'implement', text: 'Configure Defender policies in Intune to enforce real-time and weekly full scans.', tooltip: 'Use your management tools to turn on these features and prevent users from disabling them.' },
+                    { type: 'monitor', text: 'Review Defender logs to ensure scans are running and check for any malware detections.', tooltip: 'Regularly check the security dashboard to confirm that scans are completing successfully on all devices.' },
+                    { type: 'respond', text: 'Remediate any malware found during scans.', tooltip: 'If a scan finds a threat, follow your incident response plan to remove it and analyze the cause.' },
+                    { type: 'improve', text: 'Adjust scan schedules based on system performance and risk.', tooltip: 'Optimize scan times to minimize impact on users while maintaining a strong security posture.' }
                 ],
-                official_guidance: `<h3>NIST SP 800-171 R3 - 3.14.5</h3><p>Performs periodic scans of the information system and real-time scans of files from external sources as files are downloaded, opened, or executed.</p><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/800-171r3/NIST.SP.800-171r3.html#d30e4999-Head3" target="_blank">View Full Document</a>`
+                official_guidance: `<h3>NIST SP 800-171 R3 - 3.14.2</h3><p>This requirement is integrated into SI.L1-3.14.2 in NIST SP 800-171 Rev. 3.</p><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/800-171r3/NIST.SP.800-171r3.html#d30e4999-Head3" target="_blank">View Full Document</a>`
             }
         ];
         
@@ -689,13 +841,15 @@
                 const iconHtml = ICONS[step.type] || '';
                 html += `<div class="step">
                            <div class="step-node">
-                               <div class="step-icon ${step.type}">${iconHtml}</div>
+                               <div class="step-icon ${step.type}">
+                                   ${iconHtml}
+                                   <div class="step-tooltip">${step.tooltip}</div>
+                               </div>
                                <p class="step-text">${step.text}</p>
                            </div>
-                           ${index < steps.length - 1 ? '<div class="step-arrow">&#8595;</div>' : ''}
+                           <div class="step-arrow">&#8595;</div>
                        </div>`;
             });
-            html += '</div>';
             return html;
         }
 
@@ -703,6 +857,23 @@
             (acc[control.family] = acc[control.family] || []).push(control);
             return acc;
         }, {});
+        
+        const domainFilter = document.getElementById('domain-filter');
+        Object.keys(groupedControls).forEach(family => {
+            const option = document.createElement('option');
+            option.value = family;
+            option.textContent = family;
+            domainFilter.appendChild(option);
+        });
+
+        const statusFilter = document.getElementById('status-filter');
+        Object.values(STATUSES).forEach(status => {
+            const option = document.createElement('option');
+            option.value = status;
+            option.textContent = status;
+            statusFilter.appendChild(option);
+        });
+
 
         for (const family in groupedControls) {
             const navGroup = document.createElement('li');
@@ -724,6 +895,7 @@
                 const section = document.createElement('section');
                 section.id = control.id;
                 section.className = 'control-section';
+                section.dataset.family = control.family;
                 
                 const savedStatus = localStorage.getItem(`status-${control.id}`) || STATUSES.NOT_STARTED;
                 const statusOptions = Object.values(STATUSES).map(status =>
@@ -747,7 +919,10 @@
                             </div>
                             <div id="what-to-do-${control.id}" class="tab-content active">
                                 <p>${control.what_to_do}</p>
-                                <a href="#" class="official-guidance-btn" data-id="${control.id}">View Official Guidance</a>
+                                <div class="nist-text-container">
+                                    <p>${control.official_guidance.match(/<p>(.*?)<\/p>/)[1]}</p>
+                                </div>
+                                <a href="#" class="official-guidance-btn" data-id="${control.id}">View Full Guidance</a>
                             </div>
                             <div id="how-to-do-${control.id}" class="tab-content">
                                 ${control.how_to_do}
@@ -771,6 +946,8 @@
             });
             sidebarNavList.appendChild(navGroup);
         }
+
+        // --- Event Listeners ---
 
         sidebarNavList.addEventListener('click', (e) => {
             const header = e.target.closest('.nav-group-header');
@@ -803,12 +980,9 @@
                 const selector = e.target.closest('.status-selector');
                 const controlId = selector.dataset.controlId;
                 const newStatus = e.target.dataset.status;
-
                 localStorage.setItem(`status-${controlId}`, newStatus);
-
                 selector.querySelectorAll('.status-option').forEach(opt => opt.classList.remove('selected'));
                 e.target.classList.add('selected');
-                
                 updateDashboard();
             }
         });
@@ -868,6 +1042,69 @@
             if (sidebar.classList.contains('open') && !sidebar.contains(e.target) && e.target !== menuToggleBtn) {
                  sidebar.classList.remove('open');
             }
+        });
+
+        // --- Filtering Logic ---
+        function filterControls() {
+            const selectedDomain = domainFilter.value;
+            const selectedStatus = statusFilter.value;
+
+            sections.forEach(section => {
+                const controlFamily = section.dataset.family;
+                const controlStatus = localStorage.getItem(`status-${section.id}`) || STATUSES.NOT_STARTED;
+                
+                const domainMatch = selectedDomain === 'all' || controlFamily === selectedDomain;
+                const statusMatch = selectedStatus === 'all' || controlStatus === selectedStatus;
+
+                if (domainMatch && statusMatch) {
+                    section.style.display = 'block';
+                } else {
+                    section.style.display = 'none';
+                }
+            });
+        }
+        domainFilter.addEventListener('change', filterControls);
+        statusFilter.addEventListener('change', filterControls);
+        
+        // --- Exporting Logic ---
+        document.getElementById('export-pdf-btn').addEventListener('click', () => window.print());
+
+        document.getElementById('export-csv-btn').addEventListener('click', () => {
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Control ID,Control Title,Status\r\n";
+            ALL_CONTROLS.forEach(control => {
+                const status = localStorage.getItem(`status-${control.id}`) || STATUSES.NOT_STARTED;
+                const row = [control.id, `"${control.title.replace(/"/g, '""')}"`, status].join(',');
+                csvContent += row + "\r\n";
+            });
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "cmmc_compliance_status.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+
+        // --- Glossary Modal ---
+        document.getElementById('glossary-btn').addEventListener('click', () => {
+             modalBody.innerHTML = `
+                <h3>Glossary of Terms</h3>
+                <p><strong class="glossary-term">CMMC:</strong> Cybersecurity Maturity Model Certification. A framework to protect sensitive information within the defense industrial base.</p>
+                <p><strong class="glossary-term">FCI:</strong> Federal Contract Information. Information not intended for public release that is provided by or generated for the Government under a contract.</p>
+                <p><strong class="glossary-term">NIST:</strong> National Institute of Standards and Technology. A federal agency that develops technology, metrics, and standards.</p>
+                <p><strong class="glossary-term">RBAC:</strong> Role-Based Access Control. An approach to restricting system access to authorized users based on their role.</p>
+                <p><strong class="glossary-term">DLP:</strong> Data Loss Prevention. A set of tools and processes used to ensure that sensitive data is not lost, misused, or accessed by unauthorized users.</p>
+                <p><strong class="glossary-term">MFA:</strong> Multi-Factor Authentication. A security process that requires more than one method of authentication from independent categories of credentials.</p>
+                <p><strong class="glossary-term">DMZ:</strong> Demilitarized Zone. A physical or logical subnetwork that separates an internal local area network (LAN) from other untrusted networks, usually the internet.</p>
+            `;
+            modal.style.display = 'block';
+        });
+        
+        // Link logo to scroll to top
+        document.querySelector('.logo-link').addEventListener('click', (e) => {
+            e.preventDefault();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         });
 
         // Initial call
