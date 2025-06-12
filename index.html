@@ -257,9 +257,7 @@
             flex-direction: column;
             align-items: center;
         }
-        .step:not(:last-child) .step-arrow {
-            display: block;
-        }
+        
         .step-node {
             display: flex;
             align-items: center;
@@ -298,13 +296,12 @@
             line-height: 1.4;
         }
         .step-arrow {
-            display: none;
             color: var(--border-color);
             font-size: 1.5rem;
             margin: 8px 0;
         }
-        .step:not(:last-child) .step-arrow {
-             display: block;
+        .step:last-child .step-arrow {
+             display: none;
         }
 
         .step-tooltip {
@@ -346,8 +343,6 @@
         @keyframes contentFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .tab-content h4 { font-size: 1rem; margin-top: 1.5em; margin-bottom: 0.5em; color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: 8px;}
         .tab-content ul { list-style: none; padding-left: 0; color: var(--text-secondary); }
-        .tab-content li { padding-left: 20px; position: relative; margin-bottom: 8px; }
-        .tab-content li::before { content: '✓'; color: var(--primary-color); position: absolute; left: 0; font-weight: bold; }
         .tab-content strong { color: var(--text-primary); font-weight: 600;}
         .nist-text-container {
             margin-top: 15px;
@@ -360,13 +355,68 @@
 
 
         /* Status Tab Styles */
-        .status-selector { display: flex; gap: 10px; flex-wrap: wrap; }
-        .status-option { padding: 8px 16px; border-radius: 20px; border: 2px solid transparent; font-weight: 500; cursor: pointer; transition: all 0.2s; }
-        .status-option[data-status="Not Started"] { background-color: var(--status-not-started-bg); color: var(--status-not-started-text); }
-        .status-option[data-status="In Progress"] { background-color: var(--status-in-progress-bg); color: var(--status-in-progress-text); }
-        .status-option[data-status="Compliant"] { background-color: var(--status-compliant-bg); color: var(--status-compliant-text); }
-        .status-option[data-status="Needs Review"] { background-color: var(--status-needs-review-bg); color: var(--status-needs-review-text); }
-        .status-option.selected { border-color: var(--primary-color); box-shadow: 0 0 0 3px var(--flowchart-decision-bg); }
+        .status-display {
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background-color: var(--step-bg);
+        }
+        .status-display .status-text { font-size: 1.25rem; font-weight: 700; margin-bottom: 10px; }
+        .status-display .status-bar { height: 8px; border-radius: 4px; background-color: var(--border-color); overflow: hidden; }
+        .status-display .status-bar-inner { height: 100%; width: 0%; transition: width 0.3s; }
+        .status-display[data-status="Not Started"] .status-text { color: var(--status-not-started-text); }
+        .status-display[data-status="Not Started"] .status-bar-inner { background-color: var(--status-not-started-text); }
+        .status-display[data-status="In Progress"] .status-text { color: var(--status-in-progress-text); }
+        .status-display[data-status="In Progress"] .status-bar-inner { background-color: var(--status-in-progress-text); }
+        .status-display[data-status="Needs Review"] .status-text { color: var(--status-needs-review-text); }
+        .status-display[data-status="Needs Review"] .status-bar-inner { background-color: var(--status-needs-review-text); }
+        .status-display[data-status="Compliant"] .status-text { color: var(--status-compliant-text); }
+        .status-display[data-status="Compliant"] .status-bar-inner { background-color: var(--status-compliant-text); }
+
+        .checklist {
+            list-style: none;
+            padding-left: 0;
+            margin-top: 15px;
+        }
+        .checklist li {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            padding: 10px;
+            border-radius: 6px;
+            transition: background-color 0.2s;
+            cursor: pointer;
+        }
+        .checklist li:hover {
+            background-color: var(--step-bg);
+        }
+        .checklist-number {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-right: 12px;
+            flex-shrink: 0;
+            background-color: var(--status-not-started-bg);
+            color: var(--status-not-started-text);
+            transition: all 0.2s;
+        }
+        .checklist-text {
+            color: var(--text-secondary);
+            transition: all 0.2s;
+        }
+        .checklist li.verified .checklist-number {
+            background-color: var(--status-compliant-text);
+            color: white;
+        }
+        .checklist li.verified .checklist-text {
+            text-decoration: line-through;
+            opacity: 0.7;
+        }
 
         .official-guidance-btn {
             display: inline-block; margin-top: 20px; padding: 10px 20px; background-color: var(--primary-color);
@@ -512,14 +562,26 @@
     <script>
     document.addEventListener('DOMContentLoaded', () => {
 
-        const ALL_CONTROLS = [
+        const CMMC_DATA = [
             // ACCESS CONTROL (AC) - 4 Controls
             {
                 id: 'AC_L1-3_1_1', family: 'Access Control', title: 'AC.L1-3.1.1 - Authorized Access Control',
                 description: 'Limit system access to authorized users, processes acting on behalf of authorized users, and devices (including other systems). Scope: CMMC Level 1 for FCI.',
                 what_to_do: 'You must ensure that only approved individuals, computers, and software can access your company’s network and data. This means creating a clear "guest list" for your digital environment and strictly enforcing it.',
-                how_to_do: `<h4>Leveraging MVL Group's Technology Stack:</h4><ul><li><strong>Microsoft 365 G5 (Azure AD):</strong> Create unique user accounts for every employee. Do not use shared accounts.</li><li><strong>Microsoft Endpoint Manager (Intune):</strong> Register all company devices (laptops, phones) to create an inventory of trusted hardware.</li><li><strong>Azure AD Conditional Access:</strong> Create policies that only allow access from registered (compliant) devices and trusted locations.</li><li><strong>Zscaler Private Access (ZPA):</strong> Ensure remote users can only access specific internal applications after authentication and device verification.</li><li><strong>Actimo LMS:</strong> Deploy training on the importance of not sharing credentials.</li></ul>`,
-                checklist: `<ul><li>Maintain a current list of all authorized users.</li><li>Keep an inventory of all authorized devices.</li><li>Verify that access controls deny unauthorized connection attempts.</li><li>Disable accounts and remove device access immediately upon employee termination.</li><li>Formalize rules in an official Access Control Policy document.</li></ul>`,
+                how_to_do: [
+                    { key: 'ac1-1', text: 'Create unique user accounts for every employee in Azure AD.' },
+                    { key: 'ac1-2', text: 'Register all company devices in Microsoft Intune.' },
+                    { key: 'ac1-3', text: 'Configure Azure AD Conditional Access to require compliant devices.' },
+                    { key: 'ac1-4', text: 'Deploy Zscaler Private Access to hide internal applications.' },
+                    { key: 'ac1-5', text: 'Use Actimo LMS to train staff on credential security.' }
+                ],
+                checklist: [
+                    { key: 'ac1-c1', text: 'An up-to-date list of authorized users is maintained and reviewed quarterly.' },
+                    { key: 'ac1-c2', text: 'An inventory of all authorized devices is maintained and reviewed quarterly.' },
+                    { key: 'ac1-c3', text: 'Access control system logs are reviewed monthly for unauthorized attempts.' },
+                    { key: 'ac1-c4', text: 'A formal process for revoking access upon termination is documented and followed.' },
+                    { key: 'ac1-c5', text: 'A formal Access Control Policy document exists and is reviewed annually.' }
+                ],
                 process_steps: [
                     { type: 'assess', text: 'Define & Document who is authorized (users, devices, processes).', tooltip: 'Identify all individuals and systems that require access and for what purpose. This forms the basis of your access control policy.' },
                     { type: 'implement', text: 'Configure access controls in Azure AD, Intune, and Zscaler.', tooltip: 'Translate the policy into technical rules, creating user accounts, enrolling devices, and setting up conditional access policies.' },
@@ -533,8 +595,18 @@
                 id: 'AC_L1-3_1_2', family: 'Access Control', title: 'AC.L1-3.1.2 - Transaction & Function Control',
                 description: 'Limit information system access to the types of transactions and functions that authorized users are permitted to execute. Scope: CMMC Level 1 for FCI.',
                 what_to_do: 'Enforce "least privilege." This means users should only be able to perform actions and access data that is absolutely necessary for their job roles.',
-                how_to_do: `<h4>Leveraging MVL Group's Technology Stack:</h4><ul><li><strong>Microsoft 365 G5 (Azure AD):</strong> Utilize Role-Based Access Control (RBAC). Assign users to predefined roles.</li><li><strong>SharePoint Online / Teams:</strong> Configure permissions at the site, library, and folder level.</li><li><strong>Zscaler Private Access (ZPA):</strong> Create granular access policies that define which user groups can access which internal applications.</li></ul>`,
-                checklist: `<ul><li>Document all user roles and their specific, permitted functions.</li><li>Assign all users to a defined role.</li><li>Limit administrator privileges to only essential IT personnel.</li><li>Regularly test permissions by attempting to perform an unauthorized action.</li></ul>`,
+                how_to_do: [
+                    { key: 'ac2-1', text: 'Define user roles (e.g., "Admin", "User", "Auditor") in Azure AD.' },
+                    { key: 'ac2-2', text: 'Assign users to appropriate roles based on job responsibilities.' },
+                    { key: 'ac2-3', text: 'Configure SharePoint and Teams permissions to align with these roles.' },
+                    { key: 'ac2-4', text: 'Use Zscaler policies to restrict application access by user group.' }
+                ],
+                checklist: [
+                    { key: 'ac2-c1', text: 'User roles and permissions are documented.' },
+                    { key: 'ac2-c2', text: 'All users are assigned to a defined role.' },
+                    { key: 'ac2-c3', text: 'Administrative privileges are restricted to necessary IT staff.' },
+                    { key: 'ac2-c4', text: 'Permissions are tested to ensure a standard user cannot perform admin actions.' }
+                ],
                 process_steps: [
                     { type: 'assess', text: 'Define user roles and document the specific functions each role can perform.', tooltip: 'Analyze job responsibilities to determine the minimum necessary permissions for each role in the organization.' },
                     { type: 'implement', text: 'Apply these roles using Azure AD RBAC and SharePoint permissions.', tooltip: 'Configure technical controls that enforce the defined roles, ensuring users cannot perform unauthorized actions.' },
@@ -548,8 +620,18 @@
                 id: 'AC_L1-3_1_20', family: 'Access Control', title: 'AC.L1-3.1.20 - External Connections',
                 description: 'Verify and control/limit connections to and use of external information systems. Scope: CMMC Level 1 for FCI.',
                 what_to_do: 'Manage how employees use external systems (e.g., personal devices, third-party cloud services) to prevent data exposure.',
-                how_to_do: `<h4>Leveraging MVL Group's Technology Stack:</h4><ul><li><strong>Azure AD Conditional Access:</strong> Block logins from unmanaged (personal) devices.</li><li><strong>Zscaler:</strong> Enforce web usage policies to block unauthorized cloud storage.</li><li><strong>Actimo LMS:</strong> Train users on approved vs. unapproved external tools.</li></ul>`,
-                checklist: `<ul><li>Identify all scenarios where data might go to an external system.</li><li>Enforce use of trusted devices and locations for access.</li><li>Require management approval for permitted external system use.</li><li>Verify data is not stored on unauthorized cloud services.</li></ul>`,
+                how_to_do: [
+                    { key: 'ac20-1', text: 'Create an Azure AD Conditional Access policy to block logins from unmanaged devices.' },
+                    { key: 'ac20-2', text: 'Create an approved/blocked list of cloud applications in Zscaler.' },
+                    { key: 'ac20-3', text: 'Configure Zscaler policies to enforce the approved/blocked list.' },
+                    { key: 'ac20-4', text: 'Train users via Actimo on the policy for approved external tools.' }
+                ],
+                checklist: [
+                    { key: 'ac20-c1', text: 'An inventory of allowed external systems is documented.' },
+                    { key: 'ac20-c2', text: 'Conditional Access policies are active and enforced.' },
+                    { key: 'ac20-c3', text: 'Zscaler reports are reviewed for attempts to access blocked services.' },
+                    { key: 'ac20-c4', text: 'A process exists for requesting and approving new external services.' }
+                ],
                  process_steps: [
                     { type: 'assess', text: 'Identify and document all necessary external systems and cloud services.', tooltip: 'Create an inventory of all third-party services and personal device use cases for business operations.' },
                     { type: 'implement', text: 'Configure Zscaler to block unapproved services and Azure AD to block unmanaged devices.', tooltip: 'Use technical controls to enforce policies regarding which external systems are permitted.' },
@@ -563,8 +645,18 @@
                 id: 'AC_L1-3_1_22', family: 'Access Control', title: 'AC.L1-3.1.22 - Control Public Information',
                 description: 'Control information posted or processed on publicly accessible information systems. Scope: CMMC Level 1 for FCI.',
                 what_to_do: 'Prevent sensitive Federal Contract Information (FCI) from being posted on public websites. Only authorized individuals should be able to post publicly, with a review process in place.',
-                how_to_do: `<h4>Leveraging MVL Group's Technology Stack:</h4><ul><li><strong>Azure AD PIM:</strong> Strictly control who can publish content.</li><li><strong>SharePoint/Power Automate:</strong> Implement a content approval workflow.</li><li><strong>Microsoft Purview (DLP):</strong> Detect and block attempts to upload sensitive data.</li><li><strong>Actimo LMS:</strong> Train employees on what is considered FCI.</li></ul>`,
-                checklist: `<ul><li>Maintain a list of personnel authorized to post on public systems.</li><li>Establish procedures for content review and approval.</li><li>Periodically review existing public content.</li><li>Verify public systems are isolated from internal data.</li></ul>`,
+                how_to_do: [
+                    { key: 'ac22-1', text: 'Use Azure AD Privileged Identity Management (PIM) to control publishing roles.' },
+                    { key: 'ac22-2', text: 'Implement a content approval workflow in SharePoint or Power Automate.' },
+                    { key: 'ac22-3', text: 'Create a Microsoft Purview DLP policy to detect FCI keywords in uploads.' },
+                    { key: 'ac22-4', text: 'Train employees on identifying FCI using Actimo.' }
+                ],
+                checklist: [
+                    { key: 'ac22-c1', text: 'A list of authorized public posters is maintained.' },
+                    { key: 'ac22-c2', text: 'Content approval procedures are documented and followed.' },
+                    { key: 'ac22-c3', text: 'Public websites are periodically reviewed for sensitive data.' },
+                    { key: 'ac22-c4', text: 'Public-facing systems are on an isolated network segment.' }
+                ],
                  process_steps: [
                     { type: 'assess', text: 'Define what constitutes public information vs. FCI and document who is authorized to post.', tooltip: 'Clearly establish data classification guidelines and assign responsibility for public communications.' },
                     { type: 'implement', text: 'Set up an approval workflow and a DLP policy to scan for FCI in outbound traffic.', tooltip: 'Use technical controls to ensure a human review happens and to automatically block accidental leaks of FCI.' },
@@ -578,8 +670,18 @@
                 id: 'IA_L1-3_5_1', family: 'Identification & Authentication', title: 'IA.L1-3.5.1 - Identification',
                 description: 'Identify system users, processes acting on behalf of users, and devices. Scope: CMMC Level 1 for FCI.',
                 what_to_do: 'Uniquely identify every user, process, and device. This means no shared accounts, clear assignment of user IDs, and an inventory of authorized devices.',
-                how_to_do: `<h4>Leveraging MVL Group's Technology Stack:</h4><ul><li><strong>Azure AD:</strong> Provision unique user IDs for all staff.</li><li><strong>Intune:</strong> Automatically registers and assigns a unique device ID to all managed endpoints.</li><li><strong>Zscaler:</strong> Integrates with Azure AD SSO for network access identification.</li><li><strong>Actimo LMS:</strong> Reinforce the policy of "no shared accounts" through training.</li></ul>`,
-                checklist: `<ul><li>Ensure a one-to-one relationship between individuals and user accounts.</li><li>Document all service accounts and their owners.</li><li>Maintain a list of authorized devices with unique identifiers.</li><li>Verify identification extends to network devices.</li></ul>`,
+                how_to_do: [
+                    { key: 'ia1-1', text: 'Provision unique User Principal Names (UPNs) in Azure AD for all staff.' },
+                    { key: 'ia1-2', text: 'Document all service accounts, their purpose, and their owners.' },
+                    { key: 'ia1-3', text: 'Enroll all company-owned devices in Intune to assign a unique ID.' },
+                    { key: 'ia1-4', text: 'Enforce "no shared accounts" policy via Actimo training.' }
+                ],
+                checklist: [
+                    { key: 'ia1-c1', text: 'A quarterly audit confirms no generic or shared user accounts exist.' },
+                    { key: 'ia1-c2', text: 'A documented inventory of service accounts is maintained and reviewed.' },
+                    { key: 'ia1-c3', text: 'An inventory of authorized devices in Intune is complete and accurate.' },
+                    { key: 'ia1-c4', text: 'Logs attribute actions to a unique user or process ID.' }
+                ],
                 process_steps: [
                     { type: 'assess', text: 'Establish policies for unique identification for all users, devices, and service accounts.', tooltip: 'Create a clear rule that every entity accessing the network must have a unique identifier.' },
                     { type: 'implement', text: 'Provision unique IDs in Azure AD and enroll devices in Intune.', tooltip: 'Use identity and device management systems to create and manage unique identifiers.' },
@@ -593,8 +695,18 @@
                 id: 'IA_L1-3_5_2', family: 'Identification & Authentication', title: 'IA.L1-3.5.2 - Authentication',
                 description: 'Authenticate (or verify) the identities of those users, processes, or devices, as a prerequisite to allowing access to organizational information systems. Scope: CMMC Level 1 for FCI.',
                 what_to_do: 'Verify all identities before granting access. Having an ID isn’t enough; each user must prove it is who it claims to be using passwords and Multi-Factor Authentication (MFA).',
-                how_to_do: `<h4>Leveraging MVL Group's Technology Stack:</h4><ul><li><strong>Azure AD:</strong> Enforce Multi-Factor Authentication (MFA) for all user logins via Conditional Access.</li><li><strong>Zscaler:</strong> Integrates with Azure AD to enforce MFA before network access.</li><li><strong>Acronis:</strong> Integrate account access with Azure AD for authenticated backup access.</li><li><strong>Actimo:</strong> Educate users on MFA importance and credential safety.</li></ul>`,
-                checklist: `<ul><li>MFA is enabled and enforced for all user accounts.</li><li>Password policies meet complexity and length standards.</li><li>Device authentication is required for corporate resource access.</li><li>Service account credentials are secured and rotated.</li><li>Legacy authentication protocols are disabled.</li></ul>`,
+                how_to_do: [
+                    { key: 'ia2-1', text: 'Enable and enforce MFA for all user accounts via Azure AD Conditional Access.' },
+                    { key: 'ia2-2', text: 'Establish and enforce strong password policies in Azure AD.' },
+                    { key: 'ia2-3', text: 'Use certificates or managed identities for device and service account authentication.' },
+                    { key: 'ia2-4', text: 'Disable all legacy authentication protocols (e.g., POP3, IMAP) at the tenant level.' }
+                ],
+                checklist: [
+                    { key: 'ia2-c1', text: 'Azure AD MFA reports show 100% enforcement for all users.' },
+                    { key: 'ia2-c2', text: 'Password policy settings in Azure AD meet documented standards.' },
+                    { key: 'ia2-c3', text: 'Attempts to log in from a non-compliant device are blocked.' },
+                    { key: 'ia2-c4', text: 'Legacy authentication traffic is not present in sign-in logs.' }
+                ],
                 process_steps: [
                     { type: 'assess', text: 'Define strong authentication requirements, including mandatory MFA.', tooltip: 'Establish a clear policy that single-factor authentication is insufficient for accessing company resources.' },
                     { type: 'implement', text: 'Enforce MFA for all users via Azure AD Conditional Access policies.', tooltip: 'Configure the identity system to technically require a second factor for every login.' },
@@ -608,8 +720,18 @@
                 id: 'MP_L1-3_8_3', family: 'Media Protection', title: 'MP.L1-3.8.3 - Media Disposal',
                 description: 'Sanitize or destroy information system media containing Federal Contract Information before disposal or release for reuse. Scope: CMMC Level 1 for FCI.',
                 what_to_do: 'Properly wipe or destroy any storage media (hard drives, USB sticks, paper files) that contained FCI before getting rid of it, ensuring data is irretrievable.',
-                how_to_do: `<h4>Leveraging MVL Group's Technology Stack:</h4><ul><li><strong>BitLocker (Microsoft 365):</strong> Encrypt all hard drives. Deleting the key upon decommission renders data unreadable.</li><li><strong>Acronis Backup:</strong> Back up necessary data before wiping a device.</li><li><strong>Third-Party Disposal Service:</strong> Engage a certified vendor for physical destruction of media.</li><li><strong>Actimo LMS:</strong> Train staff on proper disposal procedures.</li></ul>`,
-                checklist: `<ul><li>All media are identified before disposal.</li><li>Media containing FCI is sanitized (wiped) or destroyed (shredded).</li><li>A certificate of destruction is obtained for destroyed media.</li><li>Ensure data is backed up before device disposal.</li></ul>`,
+                how_to_do: [
+                    { key: 'mp3-1', text: 'Ensure all company laptops are encrypted with BitLocker.' },
+                    { key: 'mp3-2', text: 'Establish a contract with a certified media destruction vendor.' },
+                    { key: 'mp3-3', text: 'Create a media disposal form to track items sent for destruction.' },
+                    { key: 'mp3-4', text: 'Train employees via Actimo on how to handle and dispose of paper FCI.' }
+                ],
+                checklist: [
+                    { key: 'mp3-c1', text: 'An inventory of all media designated for disposal is maintained.' },
+                    { key: 'mp3-c2', text: 'Records of destruction (e.g., certificates) are collected and stored for all destroyed media.' },
+                    { key: 'mp3-c3', text: 'Spot checks confirm that paper FCI is being shredded, not thrown in the trash.' },
+                    { key: 'mp3-c4', text: 'Data is backed up from devices via Acronis before they are sanitized.' }
+                ],
                 process_steps: [
                     { type: 'assess', text: 'Create an inventory of all media types that could contain FCI (drives, tapes, paper).', tooltip: 'Understand where FCI might be stored so you can manage its entire lifecycle, including disposal.' },
                     { type: 'implement', text: 'Establish a formal process for media disposal, including backup, sanitization, and destruction.', tooltip: 'Define the exact steps IT must follow when a device or media is retired from service.' },
@@ -623,8 +745,18 @@
                 id: 'PE_L1-3_10_1', family: 'Physical Protection', title: 'PE.L1-3.10.1 - Limit Physical Access',
                 description: 'Limit physical access to organizational information systems, equipment, and the respective operating environments to authorized individuals. Scope: CMMC Level 1 for FCI.',
                 what_to_do: 'Ensure only authorized people can get near company computers, servers, and networking equipment by securing offices and server rooms.',
-                how_to_do: `<h4>Implementation (Largely non-technical):</h4><ul><li><strong>Physical Security:</strong> Use electronic badge systems or lock-and-key for offices and server rooms.</li><li><strong>Access Lists:</strong> Maintain a list of personnel authorized for each secure area.</li><li><strong>Actimo LMS:</strong> Train employees on physical security policies like not "tailgating".</li></ul>`,
-                checklist: `<ul><li>Identify all areas housing FCI or critical systems.</li><li>Restrict access to those areas with physical controls.</li><li>Maintain and review a list of authorized personnel.</li><li>Revoke physical access upon employee departure.</li></ul>`,
+                how_to_do: [
+                    { key: 'pe1-1', text: 'Identify and document all sensitive areas (server rooms, file cabinets with FCI).' },
+                    { key: 'pe1-2', text: 'Install locks or badge readers on doors to all sensitive areas.' },
+                    { key: 'pe1-3', text: 'Create and maintain an access list of who is authorized for each area.' },
+                    { key: 'pe1-4', text: 'Train employees on physical security policies like not admitting strangers.' }
+                ],
+                checklist: [
+                    { key: 'pe1-c1', text: 'A walk-through confirms sensitive areas are properly locked and secured.' },
+                    { key: 'pe1-c2', text: 'The physical access list for the server room is reviewed and up-to-date.' },
+                    { key: 'pe1-c3', text: 'A recently terminated employee\'s physical access was confirmed to be revoked on their last day.' },
+                    { key: 'pe1-c4', text: 'The front desk and employees can explain the visitor policy.' }
+                ],
                  process_steps: [
                     { type: 'assess', text: 'Identify and map all sensitive areas requiring physical access control.', tooltip: 'Walk through your facilities to locate all server closets, network rooms, and areas where FCI is stored or processed.' },
                     { type: 'implement', text: 'Install and configure locks or badge readers for all identified areas.', tooltip: 'Put physical barriers in place to prevent unauthorized entry.' },
@@ -638,8 +770,18 @@
                 id: 'PE_L1-3_10_3', family: 'Physical Protection', title: 'PE.L1-3.10.3 - Escort Visitors',
                 description: 'Escort visitors and monitor visitor activity. Scope: CMMC Level 1 for FCI.',
                 what_to_do: 'Visitors must not be left alone in areas with access to MVL systems. They should be signed in, given badges, and accompanied by an employee.',
-                how_to_do: `<h4>Implementation:</h4><ul><li><strong>Visitor Management:</strong> Establish a visitor procedure requiring sign-in, host identification, and visitor badges.</li><li><strong>Escort Policy:</strong> Instruct employees via Actimo that visitors must be escorted in non-public areas.</li><li><strong>Monitoring:</strong> Use security cameras if available; train staff to challenge unescorted individuals.</li></ul>`,
-                checklist: `<ul><li>Visitors are logged upon entry.</li><li>Visitor badges are issued.</li><li>Policy requires an escort for visitors in sensitive areas.</li><li>Visitor activities are monitored.</li></ul>`,
+                how_to_do: [
+                    { key: 'pe3-1', text: 'Establish a formal visitor management procedure and document it.' },
+                    { key: 'pe3-2', text: 'Procure visitor badges that are visually distinct from employee badges.' },
+                    { key: 'pe3-3', text: 'Maintain a visitor sign-in log at the front desk.' },
+                    { key: 'pe3-4', text: 'Train employees on their responsibility to escort visitors via Actimo.' }
+                ],
+                checklist: [
+                    { key: 'pe3-c1', text: 'The visitor log is reviewed and is complete for the last month.' },
+                    { key: 'pe3-c2', text: 'Visitor badges are in use and easily identifiable.' },
+                    { key: 'pe3-c3', text: 'An interview with a sample of employees confirms they understand the visitor escort policy.' },
+                    { key: 'pe3-c4', text: 'If security cameras are used, footage is available and covers key areas.' }
+                ],
                 process_steps: [
                     { type: 'assess', text: 'Create a formal visitor policy that mandates sign-in, badging, and escorts.', tooltip: 'Document the exact procedure for handling any non-employee who enters the facility.' },
                     { type: 'implement', text: 'Set up a visitor log at reception and provide distinct visitor badges.', tooltip: 'Put the tools and materials in place to execute the visitor policy.' },
@@ -653,8 +795,18 @@
                 id: 'PE_L1-3_10_4', family: 'Physical Protection', title: 'PE.L1-3.10.4 - Physical Access Logs',
                 description: 'Maintain audit logs of physical access. Scope: CMMC Level 1 for FCI.',
                 what_to_do: 'Record entries and exits to sensitive facilities to have a traceable record of who was in secure areas and when.',
-                how_to_do: `<h4>Implementation:</h4><ul><li><strong>Electronic Systems:</strong> Use logging from badge entry systems.</li><li><strong>Manual Logs:</strong> Maintain sign-in/out sheets for visitors and after-hours access.</li><li><strong>Log Storage:</strong> Ensure logs are safely stored and protected.</li><li><strong>Actimo LMS:</strong> Remind staff to not bypass logging procedures.</li></ul>`,
-                checklist: `<ul><li>Electronic access logs are enabled and retained.</li><li>Visitor log records are complete and kept for all guests.</li><li>Logs include sufficient detail to identify individuals.</li><li>Logs are secured and periodically reviewed.</li></ul>`,
+                how_to_do: [
+                    { key: 'pe4-1', text: 'Enable and configure audit logging on electronic door access systems.' },
+                    { key: 'pe4-2', text: 'Implement a formal, manual sign-in/out sheet for visitors.' },
+                    { key: 'pe4-3', text: 'Establish a secure storage location for both electronic and manual logs.' },
+                    { key: 'pe4-4', text: 'Document a log review procedure and assign responsibility for review.' }
+                ],
+                checklist: [
+                    { key: 'pe4-c1', text: 'Electronic access logs are enabled and being retained for at least 90 days.' },
+                    { key: 'pe4-c2', text: 'Visitor logs are complete and contain all required fields (name, date, time, host).' },
+                    { key: 'pe4-c3', text: 'Logs are stored in a secure location with limited access.' },
+                    { key: 'pe4-c4', text: 'Evidence of periodic log review (e.g., a signed-off report) exists.' }
+                ],
                  process_steps: [
                     { type: 'assess', text: 'Determine which areas require physical access logging.', tooltip: 'Identify every door and entry point that leads to a sensitive area.' },
                     { type: 'implement', text: 'Enable electronic logging on badge systems and implement manual visitor logs.', tooltip: 'Turn on the features that record access or put the physical logbooks in place.' },
@@ -668,8 +820,18 @@
                 id: 'PE_L1-3_10_5', family: 'Physical Protection', title: 'PE.L1-3.10.5 - Manage Physical Access Devices',
                 description: 'Control and manage physical access devices. Scope: CMMC Level 1 for FCI.',
                 what_to_do: 'Carefully issue, track, and retrieve physical access devices like keys and access cards. Change locks or codes if security is compromised.',
-                how_to_do: `<h4>Implementation:</h4><ul><li><strong>Inventory:</strong> Maintain a key and badge inventory.</li><li><strong>Badge Management System:</strong> Use to assign and deactivate cards.</li><li><strong>Key Control:</strong> Have a formal check-out/check-in process.</li><li><strong>Actimo LMS:</strong> Train staff to report lost devices immediately.</li></ul>`,
-                checklist: `<ul><li>Every key/card is accounted for and assigned.</li><li>A deactivation/return process is enforced for departures.</li><li>Spare keys/cards are secured.</li><li>Door codes are changed periodically.</li></ul>`,
+                how_to_do: [
+                    { key: 'pe5-1', text: 'Create and maintain an inventory spreadsheet or database for all keys and access cards.' },
+                    { key: 'pe5-2', text: 'Establish a formal check-out/check-in form for employees to sign when receiving or returning devices.' },
+                    { key: 'pe5-3', text: 'Integrate the access card deactivation step into the HR offboarding checklist.' },
+                    { key: 'pe5-4', text: 'Store spare/master keys and unassigned badges in a locked safe.' }
+                ],
+                checklist: [
+                    { key: 'pe5-c1', text: 'The key/badge inventory is accurate and matches a physical spot check.' },
+                    { key: 'pe5-c2', text: 'HR offboarding records confirm that access was deactivated on the employee\'s last day.' },
+                    { key: 'pe5-c3', text: 'The storage location for spare keys/badges is secure.' },
+                    { key: 'pe5-c4', text: 'A policy for changing door codes is documented.' }
+                ],
                 process_steps: [
                     { type: 'assess', text: 'Create and maintain a complete inventory of all keys, badges, and codes.', tooltip: 'Know exactly how many access devices exist and who has them at all times.' },
                     { type: 'implement', text: 'Implement a formal check-in/check-out process for all physical access devices.', tooltip: 'Ensure there is a documented record every time an access device changes hands.' },
@@ -683,8 +845,18 @@
                 id: 'SC_L1-3_13_1', family: 'System & Communications Protection', title: 'SC.L1-3.13.1 - Boundary Protection',
                 description: 'Monitor, control, and protect communications at the external boundaries and key internal boundaries of the information systems. Scope: CMMC Level 1 for FCI.',
                 what_to_do: 'Guard your network borders where they connect to the internet. Use firewalls and filters to inspect and restrict traffic.',
-                how_to_do: `<h4>Leveraging MVL Group's Technology Stack:</h4><ul><li><strong>Zscaler Internet Access (ZIA):</strong> Acts as a secure web gateway to inspect all internet traffic.</li><li><strong>Zscaler Private Access (ZPA):</strong> Implements a zero-trust model, hiding internal applications.</li><li><strong>Network Segmentation:</strong> Create separate network segments (e.g., guest Wi-Fi) isolated from the corporate network.</li></ul>`,
-                checklist: `<ul><li>A network diagram exists showing all connection points.</li><li>Firewall rules are configured to default-deny inbound traffic.</li><li>Internal boundary protections are implemented if needed.</li><li>Traffic monitoring logs are enabled and reviewed.</li></ul>`,
+                how_to_do: [
+                    { key: 'sc1-1', text: 'Ensure all office internet traffic is routed through the Zscaler service.' },
+                    { key: 'sc1-2', text: 'Configure Zscaler with a default-deny policy for inbound traffic.' },
+                    { key: 'sc1-3', text: 'Create specific firewall rules in Zscaler to allow only necessary outbound traffic (e.g., ports 80, 443).' },
+                    { key: 'sc1-4', text: 'Document the network boundary and major internal segments in a network diagram.' }
+                ],
+                checklist: [
+                    { key: 'sc1-c1', text: 'A current network diagram exists and is accurate.' },
+                    { key: 'sc1-c2', text: 'Zscaler firewall rules are reviewed and confirmed to be restrictive.' },
+                    { key: 'sc1-c3', text: 'Logs from Zscaler are being collected and reviewed for anomalies.' },
+                    { key: 'sc1-c4', text: 'Internal network segments (if they exist) are properly isolated.' }
+                ],
                 process_steps: [
                     { type: 'assess', text: 'Map all network boundaries, including internet egress points and internal segments.', tooltip: 'Create a network diagram to visualize where your network connects to the outside world and where internal zones meet.' },
                     { type: 'implement', text: 'Deploy Zscaler for all internet traffic and configure firewall rules to deny all traffic by default.', tooltip: 'Configure a "deny all, allow by exception" policy at the network edge.' },
@@ -698,8 +870,18 @@
                 id: 'SC_L1-3_13_5', family: 'System & Communications Protection', title: 'SC.L1-3.13.5 - Public System Separation',
                 description: 'Implement subnetworks for publicly accessible system components that are physically or logically separated from internal networks. Scope: CMMC Level 1 for FCI.',
                 what_to_do: 'If you have public systems (like a website), they must be isolated from your internal network to create a "DMZ".',
-                how_to_do: `<h4>Implementation:</h4><ul><li><strong>Network Architecture:</strong> Host public-facing services in a separate network segment (DMZ).</li><li><strong>Firewall Rules:</strong> Strictly control traffic between the DMZ and the internal network.</li><li><strong>Zscaler Private Access (ZPA):</strong> Inherently separates internal applications from the public internet.</li></ul>`,
-                checklist: `<ul><li>Identify all publicly accessible systems.</li><li>Confirm public components are on a separate network.</li><li>Firewall rules prevent direct access from the public zone to the internal network.</li><li>Test isolation via network scan.</li></ul>`,
+                how_to_do: [
+                    { key: 'sc5-1', text: 'If hosting a public website, ensure it is hosted with a third-party provider, not on the internal network.' },
+                    { key: 'sc5-2', text: 'If a public system must be on-premise, place it on a separate physical or logical (VLAN) network segment.' },
+                    { key: 'sc5-3', text: 'Create firewall rules that strictly prohibit traffic initiated from the public zone to the internal network.' },
+                    { key: 'sc5-4', text: 'Ensure all internal applications are accessed via Zscaler Private Access, not exposed publicly.' }
+                ],
+                checklist: [
+                    { key: 'sc5-c1', text: 'An inventory of all public-facing systems exists.' },
+                    { key: 'sc5-c2', text: 'The public website\'s IP address is confirmed to be outside the internal network range.' },
+                    { key: 'sc5-c3', text: 'Firewall rules between the DMZ and internal network are verified to be default-deny.' },
+                    { key: 'sc5-c4', text: 'A network scan from the public zone confirms internal systems are not reachable.' }
+                ],
                 process_steps: [
                     { type: 'assess', text: 'Identify all publicly accessible systems (e.g., web servers).', tooltip: 'Create a definitive list of all systems that are intentionally exposed to the internet.' },
                     { type: 'implement', text: 'Place these systems in a separate, isolated network segment (DMZ).', tooltip: 'Use VLANs or cloud networking constructs to create a buffer zone between public systems and the internal network.' },
@@ -713,8 +895,18 @@
                 id: 'SI_L1-3_14_1', family: 'System and Information Integrity', title: 'SI.L1-3.14.1 - Flaw Remediation',
                 description: 'Identify, report, and correct information and information system flaws in a timely manner. Scope: CMMC Level 1 for FCI.',
                 what_to_do: 'Have a process to handle software and hardware vulnerabilities: find them (identify), track them (report), and fix them (patch) promptly.',
-                how_to_do: `<h4>Leveraging MVL Group's Technology Stack:</h4><ul><li><strong>Microsoft Defender Vulnerability Management:</strong> Scan for and identify missing patches.</li><li><strong>Intune/Windows Update for Business:</strong> Automatically deploy security patches.</li><li><strong>Acronis Backup:</strong> Ensure systems are backed up before major updates.</li><li><strong>Internal Ticketing System:</strong> Document and track internally reported flaws.</li></ul>`,
-                checklist: `<ul><li>Inventory all software and systems.</li><li>Apply critical security updates in a timely manner.</li><li>A process for internal flaw reporting exists.</li><li>Maintain evidence of patch management.</li></ul>`,
+                how_to_do: [
+                    { key: 'si1-1', text: 'Use Microsoft Defender Vulnerability Management to scan all systems for flaws.' },
+                    { key: 'si1-2', text: 'Subscribe to vendor security bulletins for key software and hardware.' },
+                    { key: 'si1-3', text: 'Configure Intune to deploy critical and security patches automatically within 30 days.' },
+                    { key: 'si1-4', text: 'Establish a helpdesk process for employees to report potential security flaws.' }
+                ],
+                checklist: [
+                    { key: 'si1-c1', text: 'A software and hardware inventory is maintained.' },
+                    { key: 'si1-c2', text: 'Intune reports show a high level of patch compliance across endpoints.' },
+                    { key: 'si1-c3', text: 'A review of critical vulnerabilities from the last 60 days shows they were patched within the 30-day requirement.' },
+                    { key: 'si1-c4', text: 'The flaw reporting procedure is documented and known to employees.' }
+                ],
                 process_steps: [
                     { type: 'assess', text: 'Continuously scan systems for vulnerabilities using Defender Vulnerability Management.', tooltip: 'Proactively identify software flaws, missing patches, and misconfigurations across all assets.' },
                     { type: 'implement', text: 'Categorize flaws by severity and create a remediation plan based on risk.', tooltip: 'Prioritize fixing the most critical vulnerabilities first.' },
@@ -728,8 +920,18 @@
                 id: 'SI_L1-3_14_2', family: 'System and Information Integrity', title: 'SI.L1-3.14.2 - Malicious Code Protection',
                 description: 'Provide protection from malicious code at appropriate locations within organizational information systems. Scope: CMMC Level 1 for FCI.',
                 what_to_do: 'Deploy anti-malware (antivirus) protections at key places: all computers, servers, email gateways, and web traffic filters.',
-                how_to_do: `<h4>Leveraging MVL Group's Technology Stack:</h4><ul><li><strong>Microsoft Defender for Endpoint:</strong> Deploy on all endpoints.</li><li><strong>Microsoft Defender for Office 365:</strong> Scan all email attachments and links.</li><li><strong>Zscaler Internet Access (ZIA):</strong> Provides malware inspection for all web traffic.</li><li><strong>Acronis:</strong> Use the anti-ransomware feature as a secondary protection layer.</li></ul>`,
-                checklist: `<ul><li>Anti-malware is installed and running on all endpoints.</li><li>Email and web traffic have malware filtering enabled.</li><li>Test effectiveness with a benign test file (EICAR).</li></ul>`,
+                how_to_do: [
+                    { key: 'si2-1', text: 'Deploy Microsoft Defender for Endpoint on all servers and workstations.' },
+                    { key: 'si2-2', text: 'Enable and configure Microsoft Defender for Office 365 to scan emails.' },
+                    { key: 'si2-3', text: 'Ensure Zscaler\'s malware inspection is active for all web traffic.' },
+                    { key: 'si2-4', text: 'Enable Acronis anti-ransomware protection on endpoints.' }
+                ],
+                checklist: [
+                    { key: 'si2-c1', text: 'A sample of workstations and servers confirms Microsoft Defender is active.' },
+                    { key: 'si2-c2', text: 'Email security settings in Defender for Office 365 are enabled and properly configured.' },
+                    { key: 'si2-c3', text: 'Zscaler logs show that web traffic is being scanned for malicious content.' },
+                    { key: 'si2-c4', text: 'The EICAR test file is successfully blocked when sent via email and downloaded from the web.' }
+                ],
                 process_steps: [
                     { type: 'assess', text: 'Identify all entry points for malicious code (email, web, removable media).', tooltip: 'Determine all the ways that malicious software could potentially enter your network.' },
                     { type: 'implement', text: 'Deploy Defender on endpoints, Defender for Office 365 for email, and Zscaler for web.', tooltip: 'Use a layered defense strategy to protect all identified entry points.' },
@@ -743,8 +945,16 @@
                 id: 'SI_L1-3_14_4', family: 'System and Information Integrity', title: 'SI.L1-3.14.4 - Update Malicious Code Protection',
                 description: 'Update malicious code protection mechanisms when new releases are available. Scope: CMMC Level 1 for FCI.',
                 what_to_do: 'Keep your anti-malware tools up-to-date, including both the malware definition files (daily) and the software engine.',
-                how_to_do: `<h4>Leveraging MVL Group's Technology Stack:</h4><ul><li><strong>Microsoft Defender:</strong> Configure automatic definition updates via Intune policy.</li><li><strong>Intune/Windows Update:</strong> Push updates for the Defender engine.</li><li><strong>Zscaler:</strong> Cloud service updates automatically; keep client app updated.</li></ul>`,
-                checklist: `<ul><li>Signature updates are frequent (daily) and automatic.</li><li>Application/engine versions are current.</li><li>Monitor consoles to ensure no endpoints have old definitions.</li><li>Zscaler client is on the latest recommended version.</li></ul>`,
+                how_to_do: [
+                    { key: 'si4-1', text: 'Configure Intune policies for Microsoft Defender to automatically download definition files daily.' },
+                    { key: 'si4-2', text: 'Use Intune to manage and deploy updates to the Defender anti-malware engine.' },
+                    { key: 'si4-3', text: 'Keep the Zscaler Client Connector app on endpoints updated to the latest version.' }
+                ],
+                checklist: [
+                    { key: 'si4-c1', text: 'A sample of devices shows Defender definitions are updated within the last 24 hours.' },
+                    { key: 'si4-c2', text: 'The Defender engine version on endpoints is current.' },
+                    { key: 'si4-c3', text: 'The Defender security portal shows no devices with out-of-date definitions.' }
+                ],
                 process_steps: [
                     { type: 'assess', text: 'Establish a policy for automatic, daily updates of anti-malware definitions.', tooltip: 'Create a rule that all anti-malware software must check for new signatures every day.' },
                     { type: 'implement', text: 'Configure Intune and Defender policies to enforce automatic updates.', tooltip: 'Use your device management system to push the update policy to all computers.' },
@@ -758,8 +968,18 @@
                 id: 'SI_L1-3_14_5', family: 'System and Information Integrity', title: 'SI.L1-3.14.5 - System & File Scanning',
                 description: 'Perform periodic scans of the information system and real-time scans of files from external sources as files are downloaded, opened, or executed. Scope: CMMC Level 1 for FCI.',
                 what_to_do: 'Anti-malware must run both real-time scans of all incoming files and regular, scheduled full-system scans.',
-                how_to_do: `<h4>Leveraging MVL Group's Technology Stack:</h4><ul><li><strong>Microsoft Defender for Endpoint:</strong> Enable "Real-time protection" and configure a weekly "Full Scan".</li><li><strong>Zscaler Internet Access (ZIA):</strong> Scans all web downloads in real-time.</li><li><strong>Microsoft Defender for Office 365:</strong> Automatically scans email attachments and links.</li><li><strong>Actimo:</strong> Educate users not to disable or postpone scans.</li></ul>`,
-                checklist: `<ul><li>A scheduled scan is defined and running on endpoints.</li><li>Real-time protection is enabled and cannot be disabled by users.</li><li>AV logs are reviewed for completion and detections.</li><li>No significant folders are excluded from scans without justification.</li></ul>`,
+                how_to_do: [
+                    { key: 'si5-1', text: 'Enable "Real-time protection" in Microsoft Defender on all endpoints.' },
+                    { key: 'si5-2', text: 'Configure a scheduled weekly "Full Scan" and daily "Quick Scan" via Intune policy.' },
+                    { key: 'si5-3', text: 'Ensure Defender is set to scan removable media (USB drives) upon insertion.' },
+                    { key: 'si5-4', text: 'Confirm Zscaler is performing real-time scanning on web downloads.' }
+                ],
+                checklist: [
+                    { key: 'si5-c1', text: 'Real-time protection is verified as enabled on a sample of systems.' },
+                    { key: 'si5-c2', text: 'Defender scan history shows that scheduled scans are occurring as planned.' },
+                    { key: 'si5-c3', text: 'AV logs show no significant folders or drives are excluded from scans.' },
+                    { key: 'si5-c4', text: 'Inserting a USB with an EICAR test file triggers an immediate detection.' }
+                ],
                 process_steps: [
                     { type: 'assess', text: 'Define policies for both real-time and scheduled scanning across all systems.', tooltip: 'Create a written policy stating that all systems must have real-time protection and run regular full scans.' },
                     { type: 'implement', text: 'Configure Defender policies in Intune to enforce real-time and weekly full scans.', tooltip: 'Use your management tools to turn on these features and prevent users from disabling them.' },
@@ -782,14 +1002,12 @@
         const STATUSES = {
             NOT_STARTED: 'Not Started',
             IN_PROGRESS: 'In Progress',
-            NEEDS_REVIEW: 'Needs Review',
             COMPLIANT: 'Compliant'
         };
 
         const STATUS_COLORS = {
             [STATUSES.NOT_STARTED]: 'var(--status-not-started-text)',
             [STATUSES.IN_PROGRESS]: 'var(--status-in-progress-text)',
-            [STATUSES.NEEDS_REVIEW]: 'var(--status-needs-review-text)',
             [STATUSES.COMPLIANT]: 'var(--status-compliant-text)'
         };
 
@@ -801,16 +1019,15 @@
             const counts = {
                 [STATUSES.NOT_STARTED]: 0,
                 [STATUSES.IN_PROGRESS]: 0,
-                [STATUSES.NEEDS_REVIEW]: 0,
                 [STATUSES.COMPLIANT]: 0,
             };
 
-            ALL_CONTROLS.forEach(control => {
-                const status = localStorage.getItem(`status-${control.id}`) || STATUSES.NOT_STARTED;
+            CMMC_DATA.forEach(control => {
+                const status = calculateControlStatus(control.id);
                 counts[status]++;
             });
 
-            const total = ALL_CONTROLS.length;
+            const total = CMMC_DATA.length;
             
             progressBarContainer.innerHTML = Object.entries(counts).map(([status, count]) => {
                 const percentage = total > 0 ? (count / total) * 100 : 0;
@@ -853,7 +1070,53 @@
             return html;
         }
 
-        const groupedControls = ALL_CONTROLS.reduce((acc, control) => {
+        function createChecklistHTML(items, controlId, type) {
+            let listHTML = `<ul class="checklist" data-control-id="${controlId}" data-type="${type}">`;
+            items.forEach((item, index) => {
+                const isChecked = localStorage.getItem(item.key) === 'true';
+                listHTML += `<li data-key="${item.key}" class="${isChecked ? 'verified' : ''}">
+                    <span class="checklist-number">${index + 1}</span>
+                    <span class="checklist-text">${item.text}</span>
+                </li>`;
+            });
+            listHTML += `</ul>`;
+            return listHTML;
+        }
+
+        function calculateControlStatus(controlId) {
+            const control = CMMC_DATA.find(c => c.id === controlId);
+            if (!control) return STATUSES.NOT_STARTED;
+
+            const allChecklistItems = [...control.how_to_do, ...control.checklist];
+            const totalItems = allChecklistItems.length;
+            if (totalItems === 0) return STATUSES.COMPLIANT;
+
+            const checkedItems = allChecklistItems.filter(item => localStorage.getItem(item.key) === 'true').length;
+            
+            if (checkedItems === 0) return STATUSES.NOT_STARTED;
+            if (checkedItems === totalItems) return STATUSES.COMPLIANT;
+            return STATUSES.IN_PROGRESS;
+        }
+        
+        function updateStatusDisplay(controlId) {
+            const statusDisplay = document.getElementById(`status-display-${controlId}`);
+            if (!statusDisplay) return;
+
+            const control = CMMC_DATA.find(c => c.id === controlId);
+            const status = calculateControlStatus(controlId);
+
+            const allChecklistItems = [...control.how_to_do, ...control.checklist];
+            const totalItems = allChecklistItems.length;
+            const checkedItems = allChecklistItems.filter(item => localStorage.getItem(item.key) === 'true').length;
+            const progress = totalItems > 0 ? (checkedItems / totalItems) * 100 : 0;
+            
+            statusDisplay.dataset.status = status;
+            statusDisplay.querySelector('.status-text').textContent = status;
+            statusDisplay.querySelector('.status-bar-inner').style.width = `${progress}%`;
+        }
+
+
+        const groupedControls = CMMC_DATA.reduce((acc, control) => {
             (acc[control.family] = acc[control.family] || []).push(control);
             return acc;
         }, {});
@@ -897,12 +1160,9 @@
                 section.className = 'control-section';
                 section.dataset.family = control.family;
                 
-                const savedStatus = localStorage.getItem(`status-${control.id}`) || STATUSES.NOT_STARTED;
-                const statusOptions = Object.values(STATUSES).map(status =>
-                    `<div class="status-option ${savedStatus === status ? 'selected' : ''}" data-status="${status}">${status}</div>`
-                ).join('');
-                
                 const processStepsHTML = createProcessStepsHTML(control.process_steps);
+                const howToDoHTML = createChecklistHTML(control.how_to_do, control.id, 'implementation');
+                const checklistHTML = createChecklistHTML(control.checklist, control.id, 'audit');
 
                 section.innerHTML = `
                     <div class="control-header">
@@ -925,15 +1185,18 @@
                                 <a href="#" class="official-guidance-btn" data-id="${control.id}">View Full Guidance</a>
                             </div>
                             <div id="how-to-do-${control.id}" class="tab-content">
-                                ${control.how_to_do}
+                                <h4>Implementation Steps</h4>
+                                ${howToDoHTML}
                             </div>
                             <div id="checklist-${control.id}" class="tab-content">
-                                ${control.checklist}
+                                <h4>Audit & Verification Items</h4>
+                                ${checklistHTML}
                             </div>
                              <div id="status-${control.id}" class="tab-content">
-                                <h4>Set Compliance Status</h4>
-                                <div class="status-selector" data-control-id="${control.id}">
-                                    ${statusOptions}
+                                <h4>Compliance Status</h4>
+                                <div class="status-display" id="status-display-${control.id}" data-status="">
+                                    <p class="status-text"></p>
+                                    <div class="status-bar"><div class="status-bar-inner"></div></div>
                                 </div>
                             </div>
                         </div>
@@ -943,6 +1206,7 @@
                     </div>
                 `;
                 mainContent.appendChild(section);
+                updateStatusDisplay(control.id);
             });
             sidebarNavList.appendChild(navGroup);
         }
@@ -972,17 +1236,18 @@
             if (e.target.matches('.official-guidance-btn')) {
                 e.preventDefault();
                 const controlId = e.target.dataset.id;
-                const controlData = ALL_CONTROLS.find(c => c.id === controlId);
+                const controlData = CMMC_DATA.find(c => c.id === controlId);
                 modalBody.innerHTML = controlData.official_guidance;
                 modal.style.display = 'block';
             }
-             if (e.target.matches('.status-option')) {
-                const selector = e.target.closest('.status-selector');
-                const controlId = selector.dataset.controlId;
-                const newStatus = e.target.dataset.status;
-                localStorage.setItem(`status-${controlId}`, newStatus);
-                selector.querySelectorAll('.status-option').forEach(opt => opt.classList.remove('selected'));
-                e.target.classList.add('selected');
+             if (e.target.closest('.checklist li')) {
+                const li = e.target.closest('li');
+                const key = li.dataset.key;
+                const isVerified = li.classList.toggle('verified');
+                localStorage.setItem(key, isVerified);
+                
+                const controlId = li.closest('.checklist').dataset.controlId;
+                updateStatusDisplay(controlId);
                 updateDashboard();
             }
         });
@@ -990,11 +1255,8 @@
         document.getElementById('chart-legend').addEventListener('click', (e) => {
             const legendItem = e.target.closest('.legend-item');
             if(legendItem) {
-                const statusToFind = legendItem.dataset.status;
-                const firstMatchingControl = ALL_CONTROLS.find(control => (localStorage.getItem(`status-${control.id}`) || STATUSES.NOT_STARTED) === statusToFind);
-                if(firstMatchingControl) {
-                    document.getElementById(firstMatchingControl.id).scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
+                document.getElementById('status-filter').value = legendItem.dataset.status;
+                filterControls();
             }
         });
 
@@ -1051,7 +1313,7 @@
 
             sections.forEach(section => {
                 const controlFamily = section.dataset.family;
-                const controlStatus = localStorage.getItem(`status-${section.id}`) || STATUSES.NOT_STARTED;
+                const controlStatus = calculateControlStatus(section.id);
                 
                 const domainMatch = selectedDomain === 'all' || controlFamily === selectedDomain;
                 const statusMatch = selectedStatus === 'all' || controlStatus === selectedStatus;
@@ -1071,10 +1333,19 @@
 
         document.getElementById('export-csv-btn').addEventListener('click', () => {
             let csvContent = "data:text/csv;charset=utf-8,";
-            csvContent += "Control ID,Control Title,Status\r\n";
-            ALL_CONTROLS.forEach(control => {
-                const status = localStorage.getItem(`status-${control.id}`) || STATUSES.NOT_STARTED;
-                const row = [control.id, `"${control.title.replace(/"/g, '""')}"`, status].join(',');
+            csvContent += "Control ID,Control Title,Status,Implementation Items,Audit Items\r\n";
+            CMMC_DATA.forEach(control => {
+                const status = calculateControlStatus(control.id);
+                const implItems = control.how_to_do.map(item => `"${item.text} - ${localStorage.getItem(item.key) === 'true' ? 'Verified' : 'Pending'}"`).join('; ');
+                const auditItems = control.checklist.map(item => `"${item.text} - ${localStorage.getItem(item.key) === 'true' ? 'Verified' : 'Pending'}"`).join('; ');
+                
+                const row = [
+                    control.id, 
+                    `"${control.title.replace(/"/g, '""')}"`, 
+                    status,
+                    `"${implItems}"`,
+                    `"${auditItems}"`
+                ].join(',');
                 csvContent += row + "\r\n";
             });
             const encodedUri = encodeURI(csvContent);
