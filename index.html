@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MVL Group - CMMC Level 1 Dashboard (NIST SP 800-171 Rev. 3)</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-color: #f8fafc;
@@ -342,7 +343,6 @@
         .tab-content.active { display: block; animation: contentFadeIn 0.5s; }
         @keyframes contentFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .tab-content h4 { font-size: 1rem; margin-top: 1.5em; margin-bottom: 0.5em; color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: 8px;}
-        .tab-content ul { list-style: none; padding-left: 0; color: var(--text-secondary); }
         .tab-content strong { color: var(--text-primary); font-weight: 600;}
         .nist-text-container {
             margin-top: 15px;
@@ -368,8 +368,6 @@
         .status-display[data-status="Not Started"] .status-bar-inner { background-color: var(--status-not-started-text); }
         .status-display[data-status="In Progress"] .status-text { color: var(--status-in-progress-text); }
         .status-display[data-status="In Progress"] .status-bar-inner { background-color: var(--status-in-progress-text); }
-        .status-display[data-status="Needs Review"] .status-text { color: var(--status-needs-review-text); }
-        .status-display[data-status="Needs Review"] .status-bar-inner { background-color: var(--status-needs-review-text); }
         .status-display[data-status="Compliant"] .status-text { color: var(--status-compliant-text); }
         .status-display[data-status="Compliant"] .status-bar-inner { background-color: var(--status-compliant-text); }
 
@@ -414,8 +412,8 @@
             color: white;
         }
         .checklist li.verified .checklist-text {
-            text-decoration: line-through;
-            opacity: 0.7;
+            /* No longer using line-through for better readability */
+            opacity: 0.8;
         }
 
         .official-guidance-btn {
@@ -426,14 +424,19 @@
 
         /* --- Modal --- */
         .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0, 0, 0, 0.6); animation: fadeIn 0.3s ease; }
-        .modal-content { background-color: var(--bg-secondary-color); margin: 5% auto; padding: 40px; border: 1px solid var(--border-color); width: 90%; max-width: 800px; border-radius: 12px; position: relative; animation: slideIn 0.3s ease; }
+        .modal-content { background-color: var(--bg-secondary-color); margin: 5% auto; padding: 0; border: 1px solid var(--border-color); width: 90%; max-width: 800px; border-radius: 12px; position: relative; animation: slideIn 0.3s ease; display: flex; flex-direction: column; max-height: 90vh; }
+        .modal-header { padding: 20px 40px; border-bottom: 1px solid var(--border-color); flex-shrink: 0; }
+        .modal-header h3 { color: var(--primary-color); font-family: 'Inter', sans-serif;}
+        .modal-body { padding: 20px 40px; overflow-y: auto; font-family: 'Lora', serif;}
+        .modal-body h4 { font-weight: 700; color: var(--text-primary); margin-top: 1.5em; margin-bottom: 0.5em; font-family: 'Inter', sans-serif;}
+        .modal-body p, .modal-body li { color: var(--text-secondary); line-height: 1.7; }
+        .modal-body ul { list-style-position: inside; padding-left: 1em; }
+        .modal-body li { margin-bottom: 0.5em; }
+        .modal-footer { padding: 20px 40px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 10px; flex-shrink: 0;}
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slideIn { from { transform: translateY(-30px); opacity: 0; } to { transform: translateY(0); opacity: 1; }}
         .close-btn { color: var(--text-secondary); position: absolute; top: 15px; right: 25px; font-size: 2rem; font-weight: bold; cursor: pointer; transition: color 0.2s; }
         .close-btn:hover { color: var(--text-primary); }
-        #modal-body-content h3 { color: var(--primary-color); margin-bottom: 15px; }
-        #modal-body-content p { color: var(--text-secondary); line-height: 1.7; }
-        #modal-body-content a { color: var(--primary-color); }
         .glossary-term { font-weight: 600; color: var(--text-primary); }
         .glossary-def { margin-bottom: 1em; }
 
@@ -450,35 +453,27 @@
         .menu-toggle { display: none; font-size: 1.5rem; margin-right: 15px; background: none; border: none; color: var(--text-primary); }
 
         @media print {
-            body * {
+            body, html { background-color: #fff; color: #000; }
+            body > *:not(.printable-section) {
                 visibility: hidden;
             }
-            .main-content, .main-content * {
-                visibility: visible;
+            .printable-section, .printable-section * {
+                visibility: visible !important;
             }
-            .main-content {
+            .printable-section {
                 position: absolute;
                 left: 0;
                 top: 0;
-                margin-left: 0;
-                padding: 20px;
-            }
-            .sidebar, .header, .main-controls, .official-guidance-btn, .status-selector, button[data-tab="status"] {
-                display: none !important;
-            }
-            .control-body {
-                display: block;
-            }
-            .control-visual {
-                page-break-before: always;
-            }
-            .control-section {
+                width: 100%;
+                max-height: none !important;
+                overflow: visible !important;
                 box-shadow: none;
-                border: 1px solid #ccc;
-                page-break-inside: avoid;
+                border: none;
             }
+             .printable-section .modal-header, .printable-section .modal-body { padding: 20px; }
+             .printable-section .modal-footer, .printable-section .close-btn { display: none !important; }
         }
-
+        
     </style>
 </head>
 <body>
@@ -552,9 +547,18 @@
     </div>
     
     <div id="guidanceModal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn" id="closeModalBtn">&times;</span>
-            <div id="modal-body-content"></div>
+        <div class="modal-content" id="modal-content-printable">
+             <div class="modal-header">
+                 <h3 id="modal-title" class="text-lg leading-6 font-medium"></h3>
+                 <button class="close-btn" id="closeModalBtn">&times;</button>
+            </div>
+            <div id="modal-body-content" class="modal-body"></div>
+            <div class="modal-footer">
+                <button id="modal-print-btn" class="header-button">Print This Control</button>
+                <button id="modal-close-btn-footer" class="px-4 py-2 bg-indigo-600 text-white text-base font-medium rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    Close
+                </button>
+            </div>
         </div>
     </div>
 
@@ -589,7 +593,7 @@
                     { type: 'respond', text: 'Disable/remove access for unauthorized entities immediately upon discovery.', tooltip: 'When an employee leaves or a device is lost, access must be revoked promptly to prevent misuse.' },
                     { type: 'improve', text: 'Review and update the Access Control policy annually or as needed.', tooltip: 'Continuously refine your access policies based on audit findings, new threats, and changing business needs.' }
                 ],
-                official_guidance: `<h3>NIST SP 800-171 R3 - 3.1.1</h3><p>Identify users, processes acting on behalf of users, and devices; and authenticate (or verify) the identities of those users, processes, and devices as a prerequisite to allowing access to organizational systems.</p><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/800-171r3/NIST.SP.800-171r3.html#d30e734-Head3" target="_blank">View Full Document</a>`
+                official_guidance: `<h3>NIST SP 800-171 R3 - 3.1.1 Account Management</h3><h4>Control</h4><p>a. Define the types of system accounts allowed and prohibited;</p><p>b. Create, enable, modify, disable, and remove system accounts in accordance with policy, procedures, prerequisites, and criteria;</p><p>c. Specify:</p><ul><li>1. Authorized users of the system,</li><li>2. Group and role membership, and</li><li>3. Access authorizations (i.e., privileges) for each account.</li></ul><p>d. Authorize access to the system based on:</p><ul><li>1. A valid access authorization and</li><li>2. Intended system usage.</li></ul><p>e. Monitor the use of system accounts;</p><p>f. Disable system accounts when:</p><ul><li>1. The accounts have expired,</li><li>2. The accounts have been inactive for [Assignment: organization-defined time period],</li><li>3. The accounts are no longer associated with a user or individual,</li><li>4. The accounts are in violation of organizational policy, or</li><li>5. Significant risks associated with individuals are discovered.</li></ul><h4>Discussion</h4><p>This requirement focuses on account management for systems and applications. System account types include individual, group, temporary, system, guest, anonymous, emergency, developer, and service. Users who require administrative privileges on system accounts receive additional scrutiny by personnel responsible for approving such accounts and privileged access. Types of accounts that organizations may prohibit due to increased risk include group, emergency, guest, anonymous, and temporary.</p><h4>References</h4><p>Derived from FIPS 200 (AC); NIST SP 800-53 (AC-2).</p>`
             },
             {
                 id: 'AC_L1-3_1_2', family: 'Access Control', title: 'AC.L1-3.1.2 - Transaction & Function Control',
@@ -614,7 +618,7 @@
                     { type: 'respond', text: 'Correct any excessive permissions found during audits.', tooltip: 'If a user has more access than their role requires, promptly reduce their permissions to the correct level.' },
                     { type: 'improve', text: 'Refine roles as job duties change to maintain least privilege.', tooltip: 'Update role definitions and permissions as employees change roles or the organization evolves.' }
                 ],
-                official_guidance: `<h3>NIST SP 800-171 R3 - 3.1.2</h3><p>Limit information system access to authorized users and the functions and transactions that authorized users are permitted to execute.</p><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/800-171r3/NIST.SP.800-171r3.html#d30e924-Head3" target="_blank">View Full Document</a>`
+                official_guidance: `<h3>NIST SP 800-171 R3 - 3.1.2 Access Enforcement</h3><h4>Control</h4><p>Enforce approved authorizations for logical access to CUI and system resources in accordance with applicable access control policies.</p><h4>Discussion</h4><p>Access control policies control access between active entities or subjects (i.e., users or system processes acting on behalf of users) and passive entities or objects (i.e., devices, files, records, domains) in organizational systems. Types of system access include remote access and access to systems that communicate through external networks, such as the internet. Access enforcement mechanisms can also be employed at the application and service levels to provide increased protection for CUI. This recognizes that the system can host many applications and services in support of mission and business functions. Access control policies are defined in 03.15.01.</p><h4>References</h4><p>Source Control: AC-03. Supporting Publications: SP 800-46, SP 800-57-1, SP 800-57-2, SP 800-57-3, SP 800-77, SP 800-113, SP 800-114, SP 800-121, SP 800-162, SP 800-178, SP 800-192, IR 7874, IR 7966.</p>`
             },
             {
                 id: 'AC_L1-3_1_20', family: 'Access Control', title: 'AC.L1-3.1.20 - External Connections',
@@ -639,7 +643,7 @@
                     { type: 'respond', text: 'Investigate and address policy violations when they occur.', tooltip: 'Follow up on blocked access attempts to understand the business need and reinforce policy.' },
                     { type: 'improve', text: 'Update the list of approved/blocked external services as business needs evolve.', tooltip: 'Maintain the relevance of the policy by periodically reviewing the list of allowed and disallowed services.' }
                 ],
-                official_guidance: `<h3>NIST SP 800-171 R3 - 3.1.3</h3><p>Control connections to and from external systems.</p><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/800-171r3/NIST.SP.800-171r3.html#d30e1563-Head3" target="_blank">View Full Document</a>`
+                official_guidance: `<h3>NIST SP 800-171 R3 - 03.01.20 Use of External Systems</h3><h4>Control</h4><p>a. Prohibit the use of external systems unless the systems are specifically authorized.</p><p>b. Establish the following security requirements to be satisfied on external systems prior to allowing use of or access to those systems by authorized individuals: [Assignment: organization-defined security requirements].</p><p>c. Permit authorized individuals to use external systems to access the organizational system or to process, store, or transmit CUI only after:</p><ul><li>1. Verifying that the security requirements on the external systems as specified in the organization's system security plans have been satisfied and</li><li>2. Retaining approved system connection or processing agreements with the organizational entities hosting the external systems.</li></ul><p>d. Restrict the use of organization-controlled portable storage devices by authorized individuals on external systems.</p><h4>Discussion</h4><p>External systems are systems that are used by but are not part of the organization. These systems include personally owned systems, system components, or devices; privately owned computing and communication devices in commercial or public facilities; systems owned or controlled by nonfederal organizations; and systems managed by contractors. Organizations have the option to prohibit the use of any type of external system or specified types of external systems (e.g., prohibit the use of external systems that are not organizationally owned). Terms and conditions are consistent with the trust relationships established with the entities that own, operate, or maintain external systems and include descriptions of shared responsibilities.</p><h4>References</h4><p>Source Controls: AC-20, AC-20(01), AC-20(02).</p>`
             },
             {
                 id: 'AC_L1-3_1_22', family: 'Access Control', title: 'AC.L1-3.1.22 - Control Public Information',
@@ -664,7 +668,7 @@
                     { type: 'respond', text: 'Immediately remove any identified FCI from public systems.', tooltip: 'Take swift action to contain any data spill and investigate the root cause.' },
                     { type: 'improve', text: 'Refine DLP rules and approval workflows based on audit findings.', tooltip: 'Use lessons learned from monitoring and incidents to make controls more effective.' }
                 ],
-                official_guidance: `<h3>NIST SP 800-171 R3 - 3.1.4</h3><p>Control information posted or processed on publicly accessible systems.</p><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/800-171r3/NIST.SP.800-171r3.html#d30e1636-Head3" target="_blank">View Full Document</a>`
+                official_guidance: `<h3>NIST SP 800-171 R3 - 03.01.22 Publicly Accessible Content</h3><h4>Control</h4><p>a. Train authorized individuals to ensure that publicly accessible information does not contain CUI.</p><p>b. Review the content on publicly accessible systems for CUI and remove such information, if discovered.</p><h4>Discussion</h4><p>In accordance with applicable laws, Executive Orders, directives, policies, regulations, standards, and guidelines, the public is not authorized to have access to nonpublic information, including CUI.</p><h4>References</h4><p>Source Control: AC-22.</p>`
             },
             {
                 id: 'IA_L1-3_5_1', family: 'Identification & Authentication', title: 'IA.L1-3.5.1 - Identification',
@@ -689,7 +693,7 @@
                     { type: 'respond', text: 'Disable shared accounts and enforce enrollment for non-compliant devices.', tooltip: 'Take corrective action to eliminate identification risks when they are found.' },
                     { type: 'improve', text: 'Automate the user/device lifecycle process from onboarding to offboarding.', tooltip: 'Link HR processes with IT systems to ensure IDs are created and removed in a timely and automated fashion.' }
                 ],
-                official_guidance: `<h3>NIST SP 800-171 R3 - 3.5.1</h3><p>This requirement is integrated into AC.L1-3.1.1 in NIST SP 800-171 Rev. 3.</p><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/800-171r3/NIST.SP.800-171r3.html#d30e2620-Head3" target="_blank">View Full Document</a>`
+                official_guidance: `<h3>NIST SP 800-171 R3 - 03.05.01 User Identification and Authentication</h3><h4>Control</h4><p>a. Uniquely identify and authenticate system users, and associate that unique identification with processes acting on behalf of those users.</p><p>b. Re-authenticate users when [Assignment: organization-defined circumstances or situations requiring re-authentication].</p><h4>Discussion</h4><p>System users include individuals (or system processes acting on behalf of individuals) who are authorized to access a system. Typically, individual identifiers are the usernames associated with the system accounts assigned to those individuals. Since system processes execute on behalf of groups and roles, organizations may require the unique identification of individuals in group accounts or the accountability of individual activity. The unique identification and authentication of users apply to all system accesses. Organizations use passwords, physical authenticators, biometrics, or some combination thereof to authenticate user identities. Organizations may re-authenticate individuals in certain situations, including when roles, authenticators, or credentials change; when the execution of privileged functions occurs; after a fixed time period; or periodically.</p><h4>References</h4><p>Source Controls: IA-02, IA-11. Supporting Publications: SP 800-63-3.</p>`
             },
             {
                 id: 'IA_L1-3_5_2', family: 'Identification & Authentication', title: 'IA.L1-3.5.2 - Authentication',
@@ -714,7 +718,7 @@
                     { type: 'respond', text: 'Block legacy authentication and assist users with MFA enrollment issues.', tooltip: 'Disable older, less secure protocols and provide support for users adopting MFA.' },
                     { type: 'improve', text: 'Explore and pilot passwordless authentication methods for higher security.', tooltip: 'Continuously look for ways to improve security and user experience, such as biometrics or FIDO2 keys.' }
                 ],
-                official_guidance: `<h3>NIST SP 800-171 R3 - 3.5.1</h3><p>This requirement is integrated into AC.L1-3.1.1 in NIST SP 800-171 Rev. 3.</p><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/800-171r3/NIST.SP.800-171r3.html#d30e2659-Head3" target="_blank">View Full Document</a>`
+                official_guidance: `<h3>NIST SP 800-171 R3 - 03.05.02 Device Identification and Authentication</h3><h4>Control</h4><p>Uniquely identify and authenticate [Assignment: organization-defined devices or types of devices] before establishing a system connection.</p><h4>Discussion</h4><p>Devices that require unique device-to-device identification and authentication are defined by type, device, or a combination of type and device. Organization-defined device types include devices that are not owned by the organization. Systems use shared known information (e.g., Media Access Control [MAC], Transmission Control Protocol/Internet Protocol [TCP/IP] addresses) for device identification or organizational authentication solutions (e.g., Institute of Electrical and Electronics Engineers [IEEE] 802.1x and Extensible Authentication Protocol [EAP], RADIUS server with EAP-Transport Layer Security [TLS] authentication, Kerberos) to identify and authenticate devices on local and wide area networks. Public Key Infrastructure (PKI) and certificate revocation checking for the certificates exchanged can be included as part of device authentication.</p><h4>References</h4><p>Source Control: IA-03. Supporting Publications: SP 800-63-3.</p>`
             },
             {
                 id: 'MP_L1-3_8_3', family: 'Media Protection', title: 'MP.L1-3.8.3 - Media Disposal',
@@ -739,7 +743,7 @@
                     { type: 'respond', text: 'Investigate any instances of improper media disposal.', tooltip: 'If a device is disposed of incorrectly, find out what happened and why to prevent recurrence.' },
                     { type: 'improve', text: 'Periodically review and update the disposal policy and procedures.', tooltip: 'Ensure your disposal methods keep up with technology changes and best practices.' }
                 ],
-                official_guidance: `<h3>NIST SP 800-171 R3 - 3.8.1</h3><p>Protect system media containing CUI, including digital and non-digital media; and limit access to CUI on system media to authorized users.</p><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/800-171r3/NIST.SP.800-171r3.html#d30e3451-Head3" target="_blank">View Full Document</a>`
+                official_guidance: `<h3>NIST SP 800-171 R3 - 03.08.03 Media Sanitization</h3><h4>Control</h4><p>Sanitize system media that contain CUI prior to disposal, release out of organizational control, or release for reuse.</p><h4>Discussion</h4><p>Media sanitization applies to digital and non-digital media that are subject to disposal or reuse, whether or not the media are considered removable. Examples include digital media in scanners, copiers, printers, notebook computers, mobile devices, workstations, network components, and non-digital media. The sanitization process removes CUI from media such that the information cannot be retrieved or reconstructed. Sanitization techniques (e.g., cryptographically erasing, clearing, purging, and destroying) prevent the disclosure of CUI to unauthorized individuals when such media are reused or released for disposal. NARA policies control the sanitization process for media that contain CUI and may require destruction when other methods cannot be applied to the media.</p><h4>References</h4><p>Source Control: MP-06. Supporting Publications: SP 800-88.</p>`
             },
             {
                 id: 'PE_L1-3_10_1', family: 'Physical Protection', title: 'PE.L1-3.10.1 - Limit Physical Access',
@@ -764,7 +768,7 @@
                     { type: 'respond', text: 'Investigate tailgating or forced entry events.', tooltip: 'If someone bypasses a physical control, determine how it happened and who was involved.' },
                     { type: 'improve', text: 'Periodically audit access lists and remove unneeded permissions.', tooltip: 'Ensure that only current employees with a valid business need have physical access to sensitive areas.' }
                 ],
-                official_guidance: `<h3>NIST SP 800-171 R3 - 3.10.1</h3><p>Limit physical access to systems, equipment, and operating environments to authorized individuals.</p><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/800-171r3/NIST.SP.800-171r3.html#d30e3757-Head3" target="_blank">View Full Document</a>`
+                official_guidance: `<h3>NIST SP 800-171 R3 - 03.10.01 Physical Access Authorizations</h3><h4>Control</h4><p>a. Develop, approve, and maintain a list of individuals with authorized access to the facility where the system resides.</p><p>b. Issue authorization credentials for facility access.</p><p>c. Review the facility access list [Assignment: organization-defined frequency].</p><p>d. Remove individuals from the facility access list when access is no longer required.</p><h4>Discussion</h4><p>A facility can include one or more physical locations containing systems or system components that process, store, or transmit CUI. Physical access authorizations apply to employees and visitors. Individuals with permanent physical access authorization credentials are not considered visitors. Authorization credentials include identification badges, identification cards, and smart cards. Organizations determine the strength of the authorization credentials consistent with applicable laws, Executive Orders, directives, policies, regulations, standards, and guidelines. Physical access authorizations may not be necessary to access certain areas within facilities that are designated as publicly accessible.</p><h4>References</h4><p>Source Control: PE-02.</p>`
             },
             {
                 id: 'PE_L1-3_10_3', family: 'Physical Protection', title: 'PE.L1-3.10.3 - Escort Visitors',
@@ -789,7 +793,7 @@
                     { type: 'respond', text: 'Politely challenge any unescorted visitors and locate their host.', tooltip: 'Take immediate action to correct a policy violation and ensure the visitor is properly escorted.' },
                     { type: 'improve', text: 'Provide refresher training to all employees on the visitor and escort policy.', tooltip: 'Regularly remind staff of their responsibilities regarding physical security and visitors.' }
                 ],
-                official_guidance: `<h3>NIST SP 800-171 R3 - 3.10.1</h3><p>This requirement is integrated into PE.L1-3.10.1 in NIST SP 800-171 Rev. 3.</p><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/800-171r3/NIST.SP.800-171r3.html#d30e3836-Head3" target="_blank">View Full Document</a>`
+                official_guidance: `<h3>NIST SP 800-171 R3 - 03.10.07 Physical Access Control</h3><h4>Control</h4><p>c. Escort visitors, and control visitor activity.</p><h4>Discussion</h4><p>Physical access control applies to employees and visitors. Individuals with permanent physical access authorizations are not considered visitors.</p><h4>References</h4><p>Source Controls: PE-03, PE-05.</p>`
             },
             {
                 id: 'PE_L1-3_10_4', family: 'Physical Protection', title: 'PE.L1-3.10.4 - Physical Access Logs',
@@ -814,7 +818,7 @@
                     { type: 'respond', text: 'Review logs periodically for suspicious activity or patterns.', tooltip: 'Actively look for red flags, such as access at odd hours or repeated failed attempts.' },
                     { type: 'improve', text: 'Adjust log retention periods based on security requirements.', tooltip: 'Ensure logs are kept long enough to be useful for an investigation, but not indefinitely.' }
                 ],
-                official_guidance: `<h3>NIST SP 800-171 R3 - 3.10.1</h3><p>This requirement is integrated into PE.L1-3.10.1 in NIST SP 800-171 Rev. 3.</p><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/800-171r3/NIST.SP.800-171r3.html#d30e3846-Head3" target="_blank">View Full Document</a>`
+                official_guidance: `<h3>NIST SP 800-171 R3 - 03.10.07 Physical Access Control</h3><h4>Control</h4><p>b. Maintain physical access audit logs for entry or exit points.</p><h4>Discussion</h4><p>Organizations have flexibility in the types of audit logs employed. Audit logs can be procedural, automated, or some combination thereof. Physical access points can include exterior access points, interior access points to systems that require supplemental access controls, or both.</p><h4>References</h4><p>Source Controls: PE-03, PE-05.</p>`
             },
             {
                 id: 'PE_L1-3_10_5', family: 'Physical Protection', title: 'PE.L1-3.10.5 - Manage Physical Access Devices',
@@ -839,7 +843,7 @@
                     { type: 'respond', text: 'Immediately deactivate and retrieve devices from departing employees, and change codes if compromised.', tooltip: 'Take immediate action to prevent unauthorized use of lost, stolen, or unreturned access devices.' },
                     { type: 'improve', text: 'Review and strengthen inventory management processes.', tooltip: 'Look for ways to make the tracking and retrieval of access devices more efficient and error-proof.' }
                 ],
-                official_guidance: `<h3>NIST SP 800-171 R3 - 3.10.1</h3><p>This requirement is integrated into PE.L1-3.10.1 in NIST SP 800-171 Rev. 3.</p><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/800-171r3/NIST.SP.800-171r3.html#d30e3856-Head3" target="_blank">View Full Document</a>`
+                official_guidance: `<h3>NIST SP 800-171 R3 - 03.10.07 Physical Access Control</h3><h4>Control</h4><p>d. Secure keys, combinations, and other physical access devices.</p><h4>Discussion</h4><p>Physical access devices include keys, locks, combinations, biometric readers, and card readers. Physical access control systems comply with applicable laws, Executive Orders, directives, policies, regulations, standards, and guidelines.</p><h4>References</h4><p>Source Controls: PE-03, PE-05.</p>`
             },
             {
                 id: 'SC_L1-3_13_1', family: 'System & Communications Protection', title: 'SC.L1-3.13.1 - Boundary Protection',
@@ -864,7 +868,7 @@
                     { type: 'respond', text: 'Block malicious IP addresses or URLs identified during monitoring.', tooltip: 'Update firewall and proxy rules to stop newly identified threats at the boundary.' },
                     { type: 'improve', text: 'Fine-tune firewall rules to be more restrictive based on observed traffic patterns.', tooltip: 'If a service only needs one port, ensure all other ports are closed to it. Continuously shrink the attack surface.' }
                 ],
-                official_guidance: `<h3>NIST SP 800-171 R3 - 3.13.1</h3><p>Control traffic at external boundaries and at key internal boundaries of the system.</p><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/800-171r3/NIST.SP.800-171r3.html#d30e4357-Head3" target="_blank">View Full Document</a>`
+                official_guidance: `<h3>NIST SP 800-171 R3 - 03.13.01 Boundary Protection</h3><h4>Control</h4><p>a. Monitor and control communications at external managed interfaces to the system and key internal managed interfaces within the system.</p><p>b. Implement subnetworks for publicly accessible system components that are physically or logically separated from internal networks.</p><p>c. Connect to external systems only through managed interfaces that consist of boundary protection devices arranged in accordance with an organizational security architecture.</p><h4>Discussion</h4><p>Managed interfaces include gateways, routers, firewalls, network-based malicious code analysis, virtualization systems, and encrypted tunnels implemented within a security architecture. Subnetworks that are either physically or logically separated from internal networks are referred to as demilitarized zones or DMZs. Restricting or prohibiting interfaces within organizational systems includes restricting external web traffic to designated web servers within managed interfaces, prohibiting external traffic that appears to be spoofing internal addresses, and prohibiting internal traffic that appears to be spoofing external addresses.</p><h4>References</h4><p>Source Control: SC-07. Supporting Publications: SP 800-41, SP 800-125B, SP 800-160-1, SP 800-189, SP 800-207.</p>`
             },
             {
                 id: 'SC_L1-3_13_5', family: 'System & Communications Protection', title: 'SC.L1-3.13.5 - Public System Separation',
@@ -889,7 +893,7 @@
                     { type: 'monitor', text: 'Run periodic penetration tests to validate the isolation.', tooltip: 'Actively try to breach the boundary from the DMZ to the internal network to confirm controls are working.' },
                     { type: 'improve', text: 'Ensure no new systems are deployed publicly without following this separation process.', tooltip: 'Integrate the DMZ deployment process into your standard change management procedures.' }
                 ],
-                official_guidance: `<h3>NIST SP 800-171 R3 - 3.13.2</h3><p>Deny network communications traffic by default and allow network communications traffic by exception.</p><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/800-171r3/NIST.SP.800-171r3.html#d30e4466-Head3" target="_blank">View Full Document</a>`
+                official_guidance: `<h3>NIST SP 800-171 R3 - 03.13.06 Network Communications - Deny by Default - Allow by Exception</h3><h4>Control</h4><p>Deny network communications traffic by default, and allow network communications traffic by exception.</p><h4>Discussion</h4><p>This requirement applies to inbound and outbound network communications traffic at the system boundary and at identified points within the system. A deny-all, allow-by-exception network communications traffic policy ensures that only essential and approved connections are allowed.</p><h4>References</h4><p>Source Control: SC-07(05). Supporting Publications: SP 800-41, SP 800-77, SP 800-189.</p>`
             },
             {
                 id: 'SI_L1-3_14_1', family: 'System and Information Integrity', title: 'SI.L1-3.14.1 - Flaw Remediation',
@@ -914,7 +918,7 @@
                     { type: 'monitor', text: 'Verify that patches were successfully installed and the vulnerability is resolved.', tooltip: 'Confirm that the fix was applied and the risk has been mitigated by re-scanning the system.' },
                     { type: 'improve', text: 'Review patching metrics to shorten the time-to-remediate.', tooltip: 'Analyze how long it takes to patch critical flaws and find ways to improve the speed and efficiency of the process.' }
                 ],
-                official_guidance: `<h3>NIST SP 800-171 R3 - 3.14.1</h3><p>Identify and correct system flaws in a timely manner.</p><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/800-171r3/NIST.SP.800-171r3.html#d30e4849-Head3" target="_blank">View Full Document</a>`
+                official_guidance: `<h3>NIST SP 800-171 R3 - 03.14.01 Flaw Remediation</h3><h4>Control</h4><p>a. Identify, report, and correct system flaws.</p><p>b. Install security-relevant software and firmware updates within [Assignment: organization-defined time period] of the release of the updates.</p><h4>Discussion</h4><p>Organizations identify systems that are affected by announced software and firmware flaws, including potential vulnerabilities that result from those flaws, and report this information to designated personnel with information security responsibilities. Security-relevant updates include patches, service packs, hot fixes, and anti-virus signatures. Organizations address the flaws discovered during security assessments, continuous monitoring, incident response activities, and system error handling. Organizations can take advantage of available resources (e.g., CWE or CVE databases) when remediating system flaws. Organization-defined time periods for updating security-relevant software and firmware may vary based on a variety of factors, including the criticality of the update (i.e., severity of the vulnerability related to the discovered flaw). Some types of flaw remediation may require more testing than other types.</p><h4>References</h4><p>Source Control: SI-02. Supporting Publications: SP 800-39, SP 800-40, SP 800-128.</p>`
             },
             {
                 id: 'SI_L1-3_14_2', family: 'System and Information Integrity', title: 'SI.L1-3.14.2 - Malicious Code Protection',
@@ -939,7 +943,7 @@
                     { type: 'respond', text: 'Isolate any infected machine from the network immediately.', tooltip: 'Prevent the malware from spreading to other systems by cutting off its network connection.' },
                     { type: 'improve', text: 'Use detection data to improve user awareness training on phishing and malware.', tooltip: 'Analyze how malware is getting in and use that data to create targeted training for employees.' }
                 ],
-                official_guidance: `<h3>NIST SP 800-171 R3 - 3.14.2</h3><p>Provide protection from malicious code at appropriate locations within the system.</p><a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/800-171r3/NIST.SP.800-171r3.html#d30e4893-Head3" target="_blank">View Full Document</a>`
+                official_guidance: `<h3>NIST SP 800-171 R3 - 03.14.02 Malicious Code Protection</h3><h4>Control</h4><p>a. Implement malicious code protection mechanisms at system entry and exit points to detect and eradicate malicious code.</p><p>b. Update malicious code protection mechanisms as new releases are available in accordance with configuration management policies and procedures.</p><p>c. Configure malicious code protection mechanisms to:</p><ul><li>1. Perform scans of the system [Assignment: organization-defined frequency] and real-time scans of files from external sources at endpoints or system entry and exit points as the files are downloaded, opened, or executed; and</li><li>2. Block malicious code, quarantine malicious code, or take other mitigation actions in response to malicious code detection.</li></ul><h4>Discussion</h4><p>Malicious code insertions occur through the exploitation of system vulnerabilities. Malicious code can be inserted into the system in a variety of ways, including email, the internet, and portable storage devices. Malicious code includes viruses, worms, Trojan horses, and spyware. Malicious code can be encoded in various formats, contained in compressed or hidden files, or hidden in files using techniques such as steganography.</p><h4>References</h4><p>Source Control: SI-03. Supporting Publications: SP 800-83, SP 800-125B, SP 800-177.</p>`
             },
             {
                 id: 'SI_L1-3_14_4', family: 'System and Information Integrity', title: 'SI.L1-3.14.4 - Update Malicious Code Protection',
@@ -995,7 +999,10 @@
         const mainContent = document.getElementById('main-content');
         const modal = document.getElementById('guidanceModal');
         const modalBody = document.getElementById('modal-body-content');
+        const modalTitleEl = document.getElementById('modal-title');
         const closeModalBtn = document.getElementById('closeModalBtn');
+        const modalCloseBtnFooter = document.getElementById('modal-close-btn-footer');
+        const modalPrintBtn = document.getElementById('modal-print-btn');
         const themeToggle = document.getElementById('theme-toggle');
         const htmlEl = document.documentElement;
         
@@ -1163,6 +1170,9 @@
                 const processStepsHTML = createProcessStepsHTML(control.process_steps);
                 const howToDoHTML = createChecklistHTML(control.how_to_do, control.id, 'implementation');
                 const checklistHTML = createChecklistHTML(control.checklist, control.id, 'audit');
+                
+                const guidanceMatch = control.official_guidance.match(/<h4>Control<\/h4>(<p>.*?<\/p>)/s);
+                const guidanceText = guidanceMatch ? guidanceMatch[1] : "<p>Guidance not available.</p>";
 
                 section.innerHTML = `
                     <div class="control-header">
@@ -1180,7 +1190,7 @@
                             <div id="what-to-do-${control.id}" class="tab-content active">
                                 <p>${control.what_to_do}</p>
                                 <div class="nist-text-container">
-                                    <p>${control.official_guidance.match(/<p>(.*?)<\/p>/)[1]}</p>
+                                    <p>${guidanceText.replace(/<a[^>]*>.*?<\/a>/g, "")}</p>
                                 </div>
                                 <a href="#" class="official-guidance-btn" data-id="${control.id}">View Full Guidance</a>
                             </div>
@@ -1221,6 +1231,16 @@
         });
 
         mainContent.addEventListener('click', (e) => {
+            if (e.target.closest('.checklist li')) {
+                const li = e.target.closest('li');
+                const key = li.dataset.key;
+                const isVerified = li.classList.toggle('verified');
+                localStorage.setItem(key, isVerified);
+                
+                const controlId = li.closest('.checklist').dataset.controlId;
+                updateStatusDisplay(controlId);
+                updateDashboard();
+            }
             if (e.target.matches('.tab-button')) {
                 const tabContainer = e.target.closest('.control-info');
                 const targetTab = e.target.dataset.tab;
@@ -1237,18 +1257,9 @@
                 e.preventDefault();
                 const controlId = e.target.dataset.id;
                 const controlData = CMMC_DATA.find(c => c.id === controlId);
+                modalTitleEl.textContent = controlData.title;
                 modalBody.innerHTML = controlData.official_guidance;
                 modal.style.display = 'block';
-            }
-             if (e.target.closest('.checklist li')) {
-                const li = e.target.closest('li');
-                const key = li.dataset.key;
-                const isVerified = li.classList.toggle('verified');
-                localStorage.setItem(key, isVerified);
-                
-                const controlId = li.closest('.checklist').dataset.controlId;
-                updateStatusDisplay(controlId);
-                updateDashboard();
             }
         });
         
@@ -1260,7 +1271,38 @@
             }
         });
 
-        closeModalBtn.onclick = () => modal.style.display = 'none';
+        closeModalBtn.addEventListener('click', () => modal.style.display = 'none');
+        modalCloseBtnFooter.addEventListener('click', () => modal.style.display = 'none');
+        
+        modalPrintBtn.addEventListener('click', () => {
+            const modalContent = document.getElementById('modal-content-printable');
+            
+            const printContent = `
+                <html>
+                    <head>
+                        <title>Print Control Details</title>
+                        <style>
+                            body { font-family: "Lora", serif; margin: 20px; } 
+                            h3, h4 { font-family: "Inter", sans-serif; color: #4f46e5; } 
+                            h4 { border-bottom: 1px solid #ccc; padding-bottom: 5px; margin-top: 1.5em; }
+                            ul { list-style-position: inside; padding-left: 1em; }
+                            li { margin-bottom: 0.5em; }
+                            p { line-height: 1.6; }
+                            a { display: none; } /* Hide the link in print */
+                            .close-btn, .modal-footer { display: none !important; }
+                        </style>
+                    </head>
+                    <body>${modalContent.innerHTML}</body>
+                </html>
+            `;
+            const printWindow = window.open('', '', 'height=800,width=800');
+            printWindow.document.write(printContent);
+            printWindow.document.close();
+            printWindow.focus();
+            printWindow.print();
+            printWindow.close();
+        });
+
         window.onclick = (e) => { if (e.target === modal) { modal.style.display = 'none'; } };
 
         const currentTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
@@ -1359,8 +1401,8 @@
 
         // --- Glossary Modal ---
         document.getElementById('glossary-btn').addEventListener('click', () => {
+             modalTitleEl.textContent = 'Glossary of Terms';
              modalBody.innerHTML = `
-                <h3>Glossary of Terms</h3>
                 <p><strong class="glossary-term">CMMC:</strong> Cybersecurity Maturity Model Certification. A framework to protect sensitive information within the defense industrial base.</p>
                 <p><strong class="glossary-term">FCI:</strong> Federal Contract Information. Information not intended for public release that is provided by or generated for the Government under a contract.</p>
                 <p><strong class="glossary-term">NIST:</strong> National Institute of Standards and Technology. A federal agency that develops technology, metrics, and standards.</p>
