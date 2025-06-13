@@ -412,7 +412,6 @@
             color: white;
         }
         .checklist li.verified .checklist-text {
-            /* No longer using line-through for better readability */
             opacity: 0.8;
         }
 
@@ -454,9 +453,6 @@
 
         @media print {
             body, html { background-color: #fff; color: #000; }
-            body > *:not(.printable-section) {
-                visibility: hidden;
-            }
             .printable-section, .printable-section * {
                 visibility: visible !important;
             }
@@ -1170,9 +1166,8 @@
                 const processStepsHTML = createProcessStepsHTML(control.process_steps);
                 const howToDoHTML = createChecklistHTML(control.how_to_do, control.id, 'implementation');
                 const checklistHTML = createChecklistHTML(control.checklist, control.id, 'audit');
-                
-                const guidanceMatch = control.official_guidance.match(/<h4>Control<\/h4>(<p>.*?<\/p>)/s);
-                const guidanceText = guidanceMatch ? guidanceMatch[1] : "<p>Guidance not available.</p>";
+                const nistTextMatch = control.official_guidance.match(/<h4>Control<\/h4>(.*?)<h4>Discussion<\/h4>/s);
+                const nistText = nistTextMatch ? nistTextMatch[1] : "<p>Guidance text not available.</p>";
 
                 section.innerHTML = `
                     <div class="control-header">
@@ -1190,7 +1185,7 @@
                             <div id="what-to-do-${control.id}" class="tab-content active">
                                 <p>${control.what_to_do}</p>
                                 <div class="nist-text-container">
-                                    <p>${guidanceText.replace(/<a[^>]*>.*?<\/a>/g, "")}</p>
+                                    <p>${nistText.replace(/<p>|<\/p>|<ul>|<\/ul>|<li>|<\/li>|<a[^>]*>.*?<\/a>/g, "")}</p>
                                 </div>
                                 <a href="#" class="official-guidance-btn" data-id="${control.id}">View Full Guidance</a>
                             </div>
@@ -1288,7 +1283,7 @@
                             ul { list-style-position: inside; padding-left: 1em; }
                             li { margin-bottom: 0.5em; }
                             p { line-height: 1.6; }
-                            a { display: none; } /* Hide the link in print */
+                            a { display: none; }
                             .close-btn, .modal-footer { display: none !important; }
                         </style>
                     </head>
